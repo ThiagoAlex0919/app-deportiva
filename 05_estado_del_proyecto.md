@@ -8,7 +8,8 @@
 **Fase 1 — Modelado de Base de Datos y Arquitectura:** ✅ **Completada** (schema aprobado formalmente el 2026-07-03)
 **Fase 2 (parte 1) — Vertical Slice del Backend (Ledger + Gamification):** ✅ **Completada** (esquema extendido, seed y smoke tests aprobados formalmente el 2026-07-03)
 **Fase 3 (parte 1) — Fase 1 del Frontend (scaffold + design system + Billetera):** ✅ **Código generado** (design system `06_design_system.md` aprobado formalmente el 2026-07-03; build verificado)
-**Siguiente paso inmediato:** 🎯 Ejecutar backend+frontend en local y validar la integración; luego **módulo `users` (JWT)** en backend y Home/feed real en frontend
+**Fase 3 (parte 1) — INTEGRACIÓN VALIDADA EN PRODUCCIÓN 2026-07-03:** ✅ Billetera en Vercel consume el Ledger de Render (saldo 420 + historial); CORS con comodín `*.vercel.app` para previews
+**Siguiente paso inmediato:** 🎯 A definir: módulo `users` (JWT) en backend, o Home/feed + páginas de equipo en frontend
 
 **Repositorio:** https://github.com/ThiagoAlex0919/app-deportiva (rama `main`; push = deploy automático)
 **Deploy (frontend):** https://app-deportiva-delta.vercel.app (Vercel, Root Directory = `frontend`, env `NEXT_PUBLIC_API_URL` → API de Render)
