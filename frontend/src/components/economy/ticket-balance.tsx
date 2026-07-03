@@ -13,13 +13,13 @@ import { useSession } from "@/lib/store";
  * Consume GET /api/v1/ledger/balance (saldo SIEMPRE derivado del ledger).
  */
 export function TicketBalance() {
-  const { usuarioId, saldo, setSaldo } = useSession();
+  const { saldo, setSaldo } = useSession();
   const [estado, setEstado] = useState<"loading" | "ok" | "error">("loading");
   const [mensajeError, setMensajeError] = useState<string>("");
 
   useEffect(() => {
     let activo = true;
-    getBalance(usuarioId)
+    getBalance() // identidad: sale del access token, no de un parámetro
       .then((r) => {
         if (!activo) return;
         setSaldo(r.saldo);
@@ -35,7 +35,7 @@ export function TicketBalance() {
     return () => {
       activo = false;
     };
-  }, [usuarioId, setSaldo]);
+  }, [setSaldo]);
 
   return (
     <Card className="bg-gradient-to-br from-ticket-muted to-surface">

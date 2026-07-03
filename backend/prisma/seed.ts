@@ -304,14 +304,21 @@ async function main(): Promise<void> {
   // ------------------------------------------------------------------
   // 3. Usuarios + bono inicial de tickets (emisión desde TESORERIA)
   // ------------------------------------------------------------------
+  // Credenciales de los usuarios del seed: password "demo1234" (bcrypt, costo 10).
+  // Hash precalculado para que el seed no dependa de bcryptjs y siga siendo
+  // determinista. Permite iniciar sesión en la app desplegada (07_modulo_users_jwt.md).
+  const PASSWORD_HASH_DEMO =
+    '$2b$10$uXIJD9FpSQv8OmPVlKBsfecUELP0kg/XloDuNssBgmusqWGy6RtU2';
   for (const [id, email, nombre] of [
     [IDS.USUARIO_DEMO, 'demo@app-deportivo.test', 'Usuario Demo'],
     [IDS.USUARIO_TESTER, 'tester@app-deportivo.test', 'Usuario Tester'],
   ] as const) {
     await prisma.usuario.upsert({
       where: { id },
-      update: {},
-      create: { id, email, nombre },
+      // update también fija el hash: los usuarios ya sembrados en producción
+      // (pre-auth) reciben su contraseña en el próximo re-seed.
+      update: { passwordHash: PASSWORD_HASH_DEMO },
+      create: { id, email, nombre, passwordHash: PASSWORD_HASH_DEMO },
     });
     await movimientoLedger({
       idempotencyKey: `SEED:BONO_REGISTRO:${id}`,

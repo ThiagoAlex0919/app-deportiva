@@ -6,14 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { TicketTransactionRow } from "./ticket-transaction-row";
 import { getHistory, ApiRequestError, type Movimiento } from "@/lib/api";
-import { useSession } from "@/lib/store";
 
 /**
  * Historial transaccional con paginación por cursor (GET /ledger/history).
  * Estados obligatorios: loading (skeletons), error (mensaje del contrato), empty.
  */
 export function WalletHistory() {
-  const usuarioId = useSession((s) => s.usuarioId);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [estado, setEstado] = useState<"loading" | "ok" | "error">("loading");
@@ -24,7 +22,7 @@ export function WalletHistory() {
   const cargar = useCallback(
     async (siguienteCursor?: string) => {
       try {
-        const r = await getHistory(usuarioId, siguienteCursor);
+        const r = await getHistory(siguienteCursor);
         setMovimientos((prev) =>
           siguienteCursor ? [...prev, ...r.movimientos] : r.movimientos,
         );
@@ -37,7 +35,7 @@ export function WalletHistory() {
         setEstado("error");
       }
     },
-    [usuarioId],
+    [],
   );
 
   useEffect(() => {

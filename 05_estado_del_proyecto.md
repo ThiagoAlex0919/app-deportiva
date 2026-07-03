@@ -15,15 +15,21 @@
 **Deploy (frontend):** https://app-deportiva-delta.vercel.app (Vercel, Root Directory = `frontend`, env `NEXT_PUBLIC_API_URL` → API de Render)
 **Deploy (backend):** https://app-deportiva-api.onrender.com/api/v1 (Render Blueprint `render.yaml`: web service Node + PostgreSQL free, `db push` + seed idempotente en cada arranque). Verificado 2026-07-03: `GET /ledger/balance` del usuario demo devuelve saldo 420 = bono 500 − pronósticos sembrados (50+30) — el Ledger cuadra en producción. Avisos plan free: el servicio se duerme con inactividad (~50 s de arranque frío) y la BD free de Render caduca (revisar dashboard).
 
-**Endpoints operativos del Vertical Slice** (prefijo `api/v1`; contrato listo para ser consumido por el Frontend):
+**Endpoints operativos** (prefijo `api/v1`; 🔒 = requiere `Authorization: Bearer <accessToken>`):
 
 | Endpoint | Descripción |
 |---|---|
-| `GET /api/v1/ledger/balance?usuarioId=` | Saldo de Tickets, siempre derivado del Ledger (vista Billetera) |
-| `GET /api/v1/ledger/history?usuarioId=&cursor=&limit=` | Historial de movimientos, paginación por cursor (vista Billetera) |
-| `POST /api/v1/gamification/predictions` | Crea y persiste un pronóstico multi-modalidad (`tipo` + `payload`) cobrando Tickets vía Ledger; idempotente por usuario+evento+modalidad |
+| `POST /api/v1/auth/register` | Crea usuario + bono de bienvenida (500 Tickets, idempotente) → tokens |
+| `POST /api/v1/auth/login` | Login email+password → accessToken (15m) + refreshToken (7d, rotativo) |
+| `POST /api/v1/auth/refresh` | Rota el refresh token → par nuevo |
+| `POST /api/v1/auth/logout` | Revoca el refresh token |
+| 🔒 `GET /api/v1/users/me` | Perfil del usuario del token |
+| 🔒 `GET /api/v1/ledger/balance` | Saldo de Tickets, siempre derivado del Ledger (vista Billetera) |
+| 🔒 `GET /api/v1/ledger/history?cursor=&limit=` | Historial de movimientos, paginación por cursor (vista Billetera) |
+| 🔒 `POST /api/v1/gamification/predictions` | Crea y persiste un pronóstico multi-modalidad cobrando Tickets; idempotente por usuario+evento+modalidad |
 
-*Nota de integración para el Frontend:* `usuarioId` viaja por query/body de forma TEMPORAL hasta que exista el módulo `users` (JWT); errores de negocio llegan como `{ statusCode, codigo, mensaje, timestamp, path }`.
+*Deuda técnica RESUELTA (2026-07-03, `07_modulo_users_jwt.md`):* el `usuarioId` ya NO viaja por query/body — sale del access token (`@CurrentUser`). Guard global secure-by-default (`@Public()` solo en `/auth/*`). Errores de negocio: `{ statusCode, codigo, mensaje, timestamp, path }`. Usuarios del seed: `demo@app-deportivo.test` / `tester@app-deportivo.test`, password `demo1234`.
+*⚠️ Pendiente:* `backend/scripts/smoke-tests.mjs` sigue usando el contrato viejo (usuarioId por query) — actualizarlo para el flujo con auth.
 
 ---
 
@@ -130,3 +136,5 @@ Verificación estática realizada: imports resuelven, modelos/campos/códigos de
 | 2026-07-03 | Backend | Schema extendido con `Prediccion` multi-modalidad (`tipo` String + `payload` Json, unique usuario+evento+tipo, `EstadoPrediccion`). Servicio de predicciones ahora persiste el pronóstico (catálogo de modalidades en dominio). Creados `prisma/seed.ts` y `scripts/smoke-tests.mjs` con 2 modalidades distintas (MARCADOR_EXACTO fútbol / PODIO F1). |
 | 2026-07-03 | Backend | Esquema, seed y tests aprobados. **Vertical Slice del Backend COMPLETADO.** Endpoints operativos: `GET /ledger/balance`, `GET /ledger/history`, `POST /gamification/predictions`. Siguiente paso inmediato: **Fase 3 — inicio del Frontend en Next.js (Chat Frontend)**. |
 | 2026-07-03 | Frontend | `06_design_system.md` creado y aprobado (análisis de `referencias_ui/`). Generada Fase 1 del frontend en `frontend/`: Next 16 + Tailwind v4 + Zustand, tokens del design system, AppShell + BottomTabBar (5 tabs), vertical Billetera conectada al Ledger y PredictionWidget (MARCADOR_EXACTO) contra `POST /gamification/predictions`. Build ✅. Pendiente: validación en local contra el backend. |
+| 2026-07-03 | Frontend | Deploy completo: repo GitHub + Vercel (frontend) + Render (backend + PostgreSQL, blueprint `render.yaml`). Integración validada en producción. CORS con comodín `*.vercel.app`. |
+| 2026-07-03 | Full-stack | **Módulo users + JWT** (`07_modulo_users_jwt.md` aprobado): schema +`passwordHash` +`RefreshToken`, auth con access 15m + refresh rotativo hasheado, guard global secure-by-default, bono de bienvenida vía Ledger, endpoints existentes protegidos (fin del usuarioId por query/body). Frontend: `/login`, `/registro`, sesión Zustand persist (access solo en memoria), refresh automático en 401, Perfil real con logout. Build frontend ✅. Pendiente: actualizar smoke tests al contrato con auth. |

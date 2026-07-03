@@ -62,7 +62,12 @@ export class PrediccionesService {
    * @throws DomainException (EVENTO_NO_APOSTABLE, 409) si el evento ya comenzó.
    * @throws DomainException (SALDO_INSUFICIENTE, 409) si faltan tickets.
    */
-  async crearPrediccion(dto: CrearPrediccionDto): Promise<PrediccionResponse> {
+  async crearPrediccion(
+    // Identidad del access token (@CurrentUser del controller) — el cliente
+    // ya no puede pronosticar "a nombre de" otro usuario.
+    usuarioId: string,
+    dto: CrearPrediccionDto,
+  ): Promise<PrediccionResponse> {
     // 1. La modalidad debe pertenecer al catálogo vigente del dominio.
     if (!esModalidadSoportada(dto.tipo)) {
       throw new DomainException(
@@ -89,7 +94,7 @@ export class PrediccionesService {
 
     // 3. Cobro vía doble entrada, idempotente por usuario+evento+modalidad.
     const prediccionId = randomUUID();
-    const idempotencyKey = `PRONOSTICO:${dto.usuarioId}:${dto.eventoId}:${dto.tipo}`;
+    const idempotencyKey = `PRONOSTICO:${usuarioId}:${dto.eventoId}:${dto.tipo}`;
 
     const tx = await this.ledgerService.registrarTransaccion({
       modulo: 'PRONOSTICOS',
@@ -99,7 +104,7 @@ export class PrediccionesService {
       idempotencyKey,
       asientos: [
         {
-          cuenta: { tipo: 'USUARIO', usuarioId: dto.usuarioId },
+          cuenta: { tipo: 'USUARIO', usuarioId: usuarioId },
           direccion: 'DEBITO',
           cantidad: dto.costoTickets,
         },
@@ -122,7 +127,7 @@ export class PrediccionesService {
     const prediccion = await this.prisma.prediccion.upsert({
       where: {
         usuarioId_eventoId_tipo: {
-          usuarioId: dto.usuarioId,
+          usuarioId: usuarioId,
           eventoId: dto.eventoId,
           tipo: dto.tipo,
         },
@@ -130,7 +135,7 @@ export class PrediccionesService {
       update: {},
       create: {
         id: idReal,
-        usuarioId: dto.usuarioId,
+        usuarioId: usuarioId,
         eventoId: dto.eventoId,
         tipo: dto.tipo,
         payload: dto.payload as Prisma.InputJsonValue,
@@ -140,7 +145,7 @@ export class PrediccionesService {
 
     if (yaExistia) {
       this.logger.log(
-        `Pronóstico ${dto.tipo} ya existente (usuario ${dto.usuarioId}, evento ${dto.eventoId})`,
+        `Pronóstico ${dto.tipo} ya existente (usuario ${usuarioId}, evento ${dto.eventoId})`,
       );
     } else {
       this.logger.log(
@@ -152,7 +157,7 @@ export class PrediccionesService {
       prediccionId: prediccion.id,
       ledgerTransactionId: tx.id,
       eventoId: dto.eventoId,
-      usuarioId: dto.usuarioId,
+      usuarioId: usuarioId,
       tipo: prediccion.tipo,
       costoTickets: prediccion.costoTickets,
       estado: prediccion.estado,

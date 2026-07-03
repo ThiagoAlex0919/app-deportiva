@@ -293,15 +293,37 @@ model Usuario {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Hash bcrypt de la contraseña (07_modulo_users_jwt.md). NULLABLE a propósito:
+  // los usuarios creados antes del módulo de auth (seed) siguen siendo válidos;
+  // un usuario sin passwordHash simplemente no puede iniciar sesión.
+  passwordHash String?
+
   // REGLA ESTRICTA (02_modelo_de_dominio.md): AQUÍ NO EXISTE CAMPO `saldoTickets`.
   // El saldo es SIEMPRE derivado: SUM(créditos) - SUM(débitos) de su LedgerAccount.
   // Un campo de saldo estático permitiría estados inconsistentes con el historial
   // y rompería la auditabilidad. El cacheo del saldo es responsabilidad de Redis.
   cuentaLedger LedgerAccount?
 
-  predicciones Prediccion[]
+  predicciones  Prediccion[]
+  refreshTokens RefreshToken[]
 
   @@map("usuarios")
+}
+
+// Sesiones de refresh (07_modulo_users_jwt.md): token OPACO de 7 días cuyo
+// SHA-256 se persiste aquí — nunca el token en claro (robo de BD ≠ robo de
+// sesiones). Rotación: cada uso revoca la fila y crea una nueva; logout revoca.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime? // null = activo
+  createdAt DateTime  @default(now())
+
+  @@index([usuarioId])
+  @@map("refresh_tokens")
 }
 
 // =====================================================================================

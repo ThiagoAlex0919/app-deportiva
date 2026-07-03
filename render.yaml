@@ -28,3 +28,7 @@ services:
           property: connectionString
       - key: CORS_ORIGIN
         value: https://app-deportiva-delta.vercel.app,*.vercel.app,http://localhost:3001
+      # Secreto de firma de los access tokens (07_modulo_users_jwt.md).
+      # Render genera un valor aleatorio en la creación y lo persiste.
+      - key: JWT_SECRET
+        generateValue: true

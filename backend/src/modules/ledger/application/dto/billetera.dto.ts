@@ -1,31 +1,14 @@
 /**
  * DTOs HTTP de la billetera (lecturas del ledger).
  *
- * NOTA TEMPORAL: mientras no exista el módulo `users` (auth JWT), el usuario
- * se identifica por query param `usuarioId`. Cuando el JwtAuthGuard esté
- * disponible, estos DTOs pierden `usuarioId` y el id saldrá del token
- * (decorator @CurrentUser). Registrado como deuda técnica en el doc 05.
+ * Deuda técnica RESUELTA (07_modulo_users_jwt.md): el usuario ya NO viaja
+ * por query — sale del access token vía @CurrentUser en el controller.
  */
 import { Type } from 'class-transformer';
-import {
-  IsInt,
-  IsOptional,
-  IsUUID,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
-/** Query de GET /ledger/balance */
-export class ConsultarSaldoQueryDto {
-  @IsUUID('4', { message: 'usuarioId debe ser un UUID v4 válido' })
-  usuarioId!: string;
-}
-
-/** Query de GET /ledger/history (paginación por cursor) */
+/** Query de GET /ledger/history (paginación por cursor). */
 export class ConsultarHistorialQueryDto {
-  @IsUUID('4', { message: 'usuarioId debe ser un UUID v4 válido' })
-  usuarioId!: string;
-
   /** Id del último asiento visto; omitir para la primera página. */
   @IsOptional()
   @IsUUID('4')

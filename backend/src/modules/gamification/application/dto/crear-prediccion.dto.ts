@@ -1,8 +1,8 @@
 /**
  * DTO HTTP de POST /gamification/predictions.
  *
- * TEMPORAL: `usuarioId` viaja en el body hasta que exista el módulo users
- * (JWT); entonces saldrá del token y se eliminará de aquí.
+ * Deuda técnica RESUELTA (07_modulo_users_jwt.md): el usuario ya no viaja
+ * en el body — sale del access token vía @CurrentUser en el controller.
  */
 import { Type } from 'class-transformer';
 import {
@@ -15,10 +15,6 @@ import {
 } from 'class-validator';
 
 export class CrearPrediccionDto {
-  /** Usuario que realiza el pronóstico. */
-  @IsUUID('4', { message: 'usuarioId debe ser un UUID v4 válido' })
-  usuarioId!: string;
-
   /** Evento (partido, carrera...) sobre el que se pronostica. */
   @IsUUID('4', { message: 'eventoId debe ser un UUID v4 válido' })
   eventoId!: string;

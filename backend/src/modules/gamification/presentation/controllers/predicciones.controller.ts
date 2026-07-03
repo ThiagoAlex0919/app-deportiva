@@ -9,6 +9,10 @@
  * DomainException y los traduce el filtro global.
  */
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  CurrentUser,
+  UsuarioAutenticado,
+} from '../../../../shared/presentation/decorators/current-user.decorator';
 import { PrediccionesService } from '../../application/services/predicciones.service';
 import {
   CrearPrediccionDto,
@@ -21,14 +25,16 @@ export class PrediccionesController {
 
   /**
    * Crea un pronóstico sobre un evento, cobrando la inscripción en Tickets.
-   * Idempotente: repetir la llamada para el mismo usuario+evento no cobra
-   * dos veces (devuelve `yaExistia: true`).
+   * Requiere Bearer token: el usuario sale de @CurrentUser, no del body.
+   * Idempotente: repetir la llamada para el mismo usuario+evento+modalidad
+   * no cobra dos veces (devuelve `yaExistia: true`).
    */
   @Post('predictions')
   @HttpCode(HttpStatus.CREATED)
   async crearPrediccion(
+    @CurrentUser() user: UsuarioAutenticado,
     @Body() dto: CrearPrediccionDto,
   ): Promise<PrediccionResponse> {
-    return this.prediccionesService.crearPrediccion(dto);
+    return this.prediccionesService.crearPrediccion(user.id, dto);
   }
 }

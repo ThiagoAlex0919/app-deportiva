@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useSesion } from "@/components/auth/require-session";
 import { TicketBadge } from "@/components/economy/ticket-badge";
 import { crearPrediccion, ApiRequestError } from "@/lib/api";
 import { useSession } from "@/lib/store";
@@ -26,7 +28,8 @@ export function PredictionWidget({
   visitante: string;
   costoTickets?: number;
 }) {
-  const { usuarioId, debitar } = useSession();
+  const debitar = useSession((s) => s.debitar);
+  const { listo, autenticado } = useSesion();
   const [marcador, setMarcador] = useState<[number, number]>([0, 0]);
   const [enviando, setEnviando] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
@@ -42,7 +45,6 @@ export function PredictionWidget({
     setEnviando(true);
     try {
       const r = await crearPrediccion({
-        usuarioId,
         eventoId,
         tipo: "MARCADOR_EXACTO",
         payload: { marcador },
@@ -104,19 +106,26 @@ export function PredictionWidget({
         ))}
       </div>
 
-      <Button
-        variant="cta"
-        fullWidth
-        disabled={enviando || confirmado}
-        onClick={confirmar}
-        className={cn(confirmado && "opacity-60")}
-      >
-        {confirmado
-          ? "Pronóstico registrado ✓"
-          : enviando
-            ? "Confirmando…"
-            : `Confirmar pronóstico`}
-      </Button>
+      {listo && !autenticado ? (
+        // Sin sesión no hay acción económica: el CTA invita a entrar.
+        <Button asChild variant="secondary" fullWidth>
+          <Link href="/login">Inicia sesión para pronosticar</Link>
+        </Button>
+      ) : (
+        <Button
+          variant="cta"
+          fullWidth
+          disabled={!listo || enviando || confirmado}
+          onClick={confirmar}
+          className={cn(confirmado && "opacity-60")}
+        >
+          {confirmado
+            ? "Pronóstico registrado ✓"
+            : enviando
+              ? "Confirmando…"
+              : `Confirmar pronóstico`}
+        </Button>
+      )}
     </div>
   );
 }

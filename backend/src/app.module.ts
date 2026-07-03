@@ -6,18 +6,27 @@
  * eventos de dominio — nunca importando internos de otro módulo.
  */
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './shared/infrastructure/prisma/prisma.module';
+import { JwtAuthGuard } from './shared/presentation/guards/jwt-auth.guard';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
     // Infraestructura compartida (global): conexión a PostgreSQL vía Prisma.
     PrismaModule,
-    // Bounded Contexts activos en este Vertical Slice.
+    // Bounded Contexts activos.
+    UsersModule, // identidad: registra el JwtModule global que usa el guard
     LedgerModule,
     GamificationModule,
-    // Próximos (Fase 2 continúa): UsersModule (auth JWT), SportsModule.
+    // Próximos: SportsModule (catálogo de deportes/eventos).
+  ],
+  providers: [
+    // Guard GLOBAL secure-by-default (07_modulo_users_jwt.md §2.3):
+    // toda ruta exige access token salvo que se marque @Public().
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppModule {}
