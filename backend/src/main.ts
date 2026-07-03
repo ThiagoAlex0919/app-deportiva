@@ -17,6 +17,12 @@ import { DomainExceptionFilter } from './shared/presentation/filters/domain-exce
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
+  // CORS: orígenes permitidos separados por coma (frontend local y desplegado).
+  const origenes = (
+    process.env.CORS_ORIGIN ?? 'http://localhost:3001'
+  ).split(',');
+  app.enableCors({ origin: origenes });
+
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(

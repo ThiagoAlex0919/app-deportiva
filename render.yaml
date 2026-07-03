@@ -1,0 +1,30 @@
+# Blueprint de Render — backend NestJS + PostgreSQL
+# Deploy: render.com → New → Blueprint → conectar este repo.
+# El seed es idempotente (upserts), por lo que puede correr en cada arranque.
+
+databases:
+  - name: app-deportiva-db
+    plan: free
+    databaseName: app_deportiva
+    user: app_deportiva
+
+services:
+  - type: web
+    name: app-deportiva-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    # db push: sincroniza el schema sin carpeta de migraciones (la migración
+    # formal `prisma migrate dev` sigue pendiente de ejecutarse en local — doc 05).
+    # El seed es idempotente: correrlo en cada deploy es seguro.
+    startCommand: npx prisma db push --skip-generate --accept-data-loss && npm run seed && npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: app-deportiva-db
+          property: connectionString
+      - key: CORS_ORIGIN
+        value: https://app-deportiva-delta.vercel.app,http://localhost:3001
