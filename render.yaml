@@ -18,7 +18,7 @@ services:
     # db push: sincroniza el schema sin carpeta de migraciones (la migración
     # formal `prisma migrate dev` sigue pendiente de ejecutarse en local — doc 05).
     # El seed es idempotente: correrlo en cada deploy es seguro.
-    startCommand: npx prisma db push --skip-generate --accept-data-loss && npm run seed && npm run start:prod
+    startCommand: npx prisma db push --accept-data-loss && npm run seed && npm run start:prod
     envVars:
       - key: NODE_VERSION
         value: 22.12.0

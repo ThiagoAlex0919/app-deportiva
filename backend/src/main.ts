@@ -37,7 +37,8 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new DomainExceptionFilter());
 
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port);
+  // 0.0.0.0: necesario en contenedores/PaaS (Render) para que el port scan lo detecte.
+  await app.listen(port, '0.0.0.0');
   // eslint-disable-next-line no-console
   console.log(`[backend] API escuchando en http://localhost:${port}/api/v1`);
 }
