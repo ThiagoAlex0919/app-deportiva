@@ -10,6 +10,9 @@
 **Fase 3 (parte 1) — Fase 1 del Frontend (scaffold + design system + Billetera):** ✅ **Código generado** (design system `06_design_system.md` aprobado formalmente el 2026-07-03; build verificado)
 **Siguiente paso inmediato:** 🎯 Ejecutar backend+frontend en local y validar la integración; luego **módulo `users` (JWT)** en backend y Home/feed real en frontend
 
+**Repositorio:** https://github.com/ThiagoAlex0919/app-deportiva (rama `main`; push = deploy automático)
+**Deploy (frontend):** https://app-deportiva-delta.vercel.app (Vercel, Root Directory = `frontend`). El backend NO está desplegado aún: la Billetera en producción muestra su estado de error hasta desplegar NestJS + PostgreSQL (Railway/Render, pendiente).
+
 **Endpoints operativos del Vertical Slice** (prefijo `api/v1`; contrato listo para ser consumido por el Frontend):
 
 | Endpoint | Descripción |
