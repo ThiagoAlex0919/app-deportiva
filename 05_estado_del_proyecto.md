@@ -11,7 +11,8 @@
 **Siguiente paso inmediato:** 🎯 Ejecutar backend+frontend en local y validar la integración; luego **módulo `users` (JWT)** en backend y Home/feed real en frontend
 
 **Repositorio:** https://github.com/ThiagoAlex0919/app-deportiva (rama `main`; push = deploy automático)
-**Deploy (frontend):** https://app-deportiva-delta.vercel.app (Vercel, Root Directory = `frontend`). El backend NO está desplegado aún: la Billetera en producción muestra su estado de error hasta desplegar NestJS + PostgreSQL (Railway/Render, pendiente).
+**Deploy (frontend):** https://app-deportiva-delta.vercel.app (Vercel, Root Directory = `frontend`, env `NEXT_PUBLIC_API_URL` → API de Render)
+**Deploy (backend):** https://app-deportiva-api.onrender.com/api/v1 (Render Blueprint `render.yaml`: web service Node + PostgreSQL free, `db push` + seed idempotente en cada arranque). Verificado 2026-07-03: `GET /ledger/balance` del usuario demo devuelve saldo 420 = bono 500 − pronósticos sembrados (50+30) — el Ledger cuadra en producción. Avisos plan free: el servicio se duerme con inactividad (~50 s de arranque frío) y la BD free de Render caduca (revisar dashboard).
 
 **Endpoints operativos del Vertical Slice** (prefijo `api/v1`; contrato listo para ser consumido por el Frontend):
 
