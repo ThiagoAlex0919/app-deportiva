@@ -5,8 +5,13 @@
  * TEMPORAL: usuarioId viaja por query/body hasta que exista el módulo users (JWT).
  */
 
+// Prioridad: env var (Vercel/local) → producción (Render) → dev local.
+// En desarrollo usa .env.local (ver .env.example) para apuntar a localhost.
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://app-deportiva-api.onrender.com/api/v1"
+    : "http://localhost:3000/api/v1");
 
 /** Contrato de error del backend (filtro global de DomainException). */
 export interface ApiError {
