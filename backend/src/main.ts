@@ -18,10 +18,24 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   // CORS: orígenes permitidos separados por coma (frontend local y desplegado).
-  const origenes = (
-    process.env.CORS_ORIGIN ?? 'http://localhost:3001'
-  ).split(',');
-  app.enableCors({ origin: origenes });
+  // Entradas que empiezan con "*." se tratan como comodín de subdominio
+  // (ej. "*.vercel.app" acepta cualquier preview del proyecto en Vercel).
+  const entradas = (process.env.CORS_ORIGIN ?? 'http://localhost:3001').split(
+    ',',
+  );
+  const exactos = entradas.filter((e) => !e.startsWith('*.'));
+  const sufijos = entradas
+    .filter((e) => e.startsWith('*.'))
+    .map((e) => e.slice(1)); // "*.vercel.app" -> ".vercel.app"
+  app.enableCors({
+    origin: (origin, callback) => {
+      const permitido =
+        !origin || // requests sin Origin (curl, server-to-server)
+        exactos.includes(origin) ||
+        sufijos.some((s) => new URL(origin).hostname.endsWith(s));
+      callback(null, permitido);
+    },
+  });
 
   app.setGlobalPrefix('api/v1');
 

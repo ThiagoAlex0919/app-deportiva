@@ -27,4 +27,4 @@ services:
           name: app-deportiva-db
           property: connectionString
       - key: CORS_ORIGIN
-        value: https://app-deportiva-delta.vercel.app,http://localhost:3001
+        value: https://app-deportiva-delta.vercel.app,*.vercel.app,http://localhost:3001
