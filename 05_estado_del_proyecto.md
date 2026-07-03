@@ -1,0 +1,127 @@
+# 05 — Estado del Proyecto (Punto de Sincronización)
+
+> **Propósito:** Este archivo es la única fuente de verdad sobre el estado actual del desarrollo.
+> Los chats de Backend y Frontend DEBEN leer este archivo al iniciar y actualizarlo al terminar su trabajo.
+> Reglas absolutas del proyecto: ver `01_vision_y_stack.md`, `02_modelo_de_dominio.md`, `03_instrucciones_fable5.md`, `04_sitemap_y_ux.md`.
+
+**Última actualización:** 2026-07-03 — Chat de Frontend
+**Fase 1 — Modelado de Base de Datos y Arquitectura:** ✅ **Completada** (schema aprobado formalmente el 2026-07-03)
+**Fase 2 (parte 1) — Vertical Slice del Backend (Ledger + Gamification):** ✅ **Completada** (esquema extendido, seed y smoke tests aprobados formalmente el 2026-07-03)
+**Fase 3 (parte 1) — Fase 1 del Frontend (scaffold + design system + Billetera):** ✅ **Código generado** (design system `06_design_system.md` aprobado formalmente el 2026-07-03; build verificado)
+**Siguiente paso inmediato:** 🎯 Ejecutar backend+frontend en local y validar la integración; luego **módulo `users` (JWT)** en backend y Home/feed real en frontend
+
+**Endpoints operativos del Vertical Slice** (prefijo `api/v1`; contrato listo para ser consumido por el Frontend):
+
+| Endpoint | Descripción |
+|---|---|
+| `GET /api/v1/ledger/balance?usuarioId=` | Saldo de Tickets, siempre derivado del Ledger (vista Billetera) |
+| `GET /api/v1/ledger/history?usuarioId=&cursor=&limit=` | Historial de movimientos, paginación por cursor (vista Billetera) |
+| `POST /api/v1/gamification/predictions` | Crea y persiste un pronóstico multi-modalidad (`tipo` + `payload`) cobrando Tickets vía Ledger; idempotente por usuario+evento+modalidad |
+
+*Nota de integración para el Frontend:* `usuarioId` viaja por query/body de forma TEMPORAL hasta que exista el módulo `users` (JWT); errores de negocio llegan como `{ statusCode, codigo, mensaje, timestamp, path }`.
+
+---
+
+## 1. Base de Datos
+
+| Ítem | Estado | Notas |
+|---|---|---|
+| `schema.prisma` (abstracciones base) | ✅ Aprobado | `Deporte → Competicion → Temporada → Evento → Participante` |
+| Ledger de Tickets (doble entrada) | ✅ Aprobado | `LedgerAccount`, `LedgerTransaction`, `LedgerEntry`. Sin campo de saldo en `Usuario` |
+| Migración inicial (`prisma migrate`) | ⬜ Pendiente | Ejecutar en Fase 2 al inicializar el backend |
+| Modelos de Gamificación (motor de reglas) | ⬜ Pendiente | Fase posterior; el Ledger ya soporta sus asientos vía `ModuloSistema` |
+| Modelo `Prediccion` (multi-modalidad) | ✅ Añadido 2026-07-03 | `tipo` String (modalidad: MARCADOR_EXACTO, GANADOR, PODIO...) + `payload` Json flexible por deporte. Unique `usuario+evento+tipo` alineada con la idempotencyKey del cobro. Anclado a `Evento` |
+| Modelos de Pronósticos/Desafíos (resto: pollas, rankings) | ⬜ Pendiente | Fases posteriores |
+| Modelos de Marketplace y Reservas | ⬜ Pendiente | Módulos desacoplados; solo tocan Tickets vía Ledger |
+
+**Decisiones de arquitectura tomadas (Fase 1):**
+1. El saldo de Tickets es **derivado** (suma de asientos del Ledger), nunca almacenado en `Usuario`. Cacheable en Redis.
+2. Doble entrada estricta: toda transacción tiene ≥2 asientos y la suma de débitos = suma de créditos. Invariante aplicada en la capa de dominio (Prisma no puede expresarla).
+3. Referencias polimórficas del Ledger (`referenciaTipo` + `referenciaId`) en lugar de FKs directas, para mantener los módulos desacoplados (DDD: el contexto Economía no conoce a Marketplace/Gamificación).
+4. Campos específicos por deporte se modelan en columnas `Json` (`metadata`, `resultado`) para mantener el dominio abstracto y agnóstico al deporte.
+5. `idempotencyKey` única en transacciones para evitar dobles emisiones ante reintentos.
+6. Identificadores UUID en todas las tablas (preparación para microservicios / IDs generables en app).
+7. Schema validado contra **Prisma 7.8** (motor oficial). En Prisma 7 la URL de conexión no va en el schema: se configura en `prisma.config.ts` + adapter de `PrismaClient` (nota incluida en el datasource).
+
+## 2. APIs (Backend — NestJS)
+
+| Ítem | Estado |
+|---|---|
+| Estructura de carpetas DDD (Fase 2) | ✅ Creada en `backend/` según `06_arquitectura_nestjs.md` |
+| Módulo Usuarios (auth JWT + refresh) | ⬜ No iniciado ← **SIGUIENTE del backend** |
+| Módulo Economía (servicio Ledger transaccional) | ✅ Funcional (escritura interna + APIs de lectura) |
+| Módulo Gamificación (motor de reglas + eventos de sistema) | 🟡 Esqueleto + caso de uso Pronósticos (motor de reglas pendiente) |
+
+**Contrato definido e implementado:** `LedgerService.registrarTransaccion()` (`backend/src/modules/ledger/application/services/ledger.service.ts`) — único punto de escritura al Ledger. Garantiza: invariantes de doble entrada en la entidad de dominio, idempotencia por clave única, saldo no-negativo verificado en transacción **Serializable** de PostgreSQL.
+
+**Endpoints creados (2026-07-03) — listos para ser probados:**
+
+| Método y ruta (prefijo `api/v1`) | Módulo | Descripción |
+|---|---|---|
+| `GET /api/v1/ledger/balance?usuarioId=` | Ledger | Saldo derivado del ledger (nunca almacenado) |
+| `GET /api/v1/ledger/history?usuarioId=&cursor=&limit=` | Ledger | Historial de billetera, paginación por cursor |
+| `POST /api/v1/gamification/predictions` | Gamification | Crea y PERSISTE el pronóstico (`tipo` + `payload` flexible) y cobra tickets vía `LedgerService`. Idempotente: 1 pronóstico por usuario+evento+**modalidad** |
+
+**Decisiones tomadas en el Vertical Slice (a validar por el Arquitecto):**
+1. **Identidad temporal:** sin módulo `users`, el `usuarioId` viaja por query/body. Deuda técnica: al implementar JWT, se sustituye por `@CurrentUser` y se eliminan esos campos de los DTOs.
+2. ~~El payload del pronóstico no se persiste~~ → **RESUELTO 2026-07-03:** modelo `Prediccion` añadido al schema (`tipo` + `payload` Json). El catálogo de modalidades vive en el dominio (`gamification/domain/modalidades.ts`) — añadir una modalidad NO requiere migración. Nota de atomicidad: cobro (ledger) y fila `Prediccion` van en dos transacciones; el upsert por unique compuesta repara el caso borde de crash intermedio. Unificarlas requiere extender el contrato del Ledger (candidato Fase 2 parte 2).
+3. La inscripción del pronóstico va a la cuenta de sistema `REDENCION` con `modulo=PRONOSTICOS`, `motivo=PAGO`.
+4. Saldo derivado en vivo (sin caché Redis todavía); apoyado en el índice `(cuentaId, createdAt)`.
+5. Cuentas del ledger de creación perezosa (billetera y cuentas de sistema se crean con su primer movimiento).
+
+**Datos de prueba y smoke tests (creados 2026-07-03):**
+- `backend/prisma/seed.ts` (`npm run seed`): 2 deportes con formatos distintos (Fútbol EQUIPOS, F1 MULTITUDINARIO), eventos PROGRAMADOS con participantes, 2 usuarios con bono de 500 tickets (doble entrada desde TESORERIA) y **2 pronósticos sembrados con modalidades diferentes** para el usuario demo: `MARCADOR_EXACTO` (payload `{"marcador":[2,1]}`) y `PODIO` (payload `{"podio":[...]}`). Re-ejecutable (upserts + idempotencyKeys).
+- `backend/scripts/smoke-tests.mjs` (`npm run smoke`): contra la API crea **2 modalidades distintas** con el usuario tester, verifica idempotencia (repetir no cobra doble), delta exacto de saldo, historial con ambos módulos emisores, y errores `SALDO_INSUFICIENTE` (409) y `MODALIDAD_NO_SOPORTADA` (422). Re-ejecutable (asserts por deltas).
+
+**Para probar (pendiente de ejecutar en la máquina del desarrollador):**
+```bash
+cd backend
+cp .env.example .env   # configurar DATABASE_URL
+npm install
+npx prisma migrate dev --name init_con_predicciones   # ← migración inicial pendiente (ver §1)
+npm run seed
+npm run start:dev      # en otra terminal:
+npm run smoke
+```
+Verificación estática realizada: imports resuelven, modelos/campos/códigos de error consistentes entre schema, código, seed y smoke tests, y copia `backend/prisma/schema.prisma` sincronizada con la raíz. Falta compilación real (`npm run build`) tras instalar dependencias.
+
+## 3. Frontend (Next.js PWA)
+
+| Ítem | Estado |
+|---|---|
+| `06_design_system.md` (tokens, paleta, componentes) | ✅ Aprobado 2026-07-03 |
+| Estructura base + Tailwind + PWA (Fase 3) | ✅ Generado en `frontend/` (Next 16, App Router, Tailwind **v4 CSS-first** — tokens en `globals.css @theme`, no hay `tailwind.config.ts`) |
+| Bottom Tab Bar (5 módulos según `04_sitemap_y_ux.md`) | ✅ Funcional (`/`, `/juego`, `/billetera`, `/tienda`, `/perfil`) |
+| Billetera (consume saldo + historial del Ledger) | ✅ Conectada a `GET /ledger/balance` y `GET /ledger/history` (cursor) |
+| PredictionWidget (MARCADOR_EXACTO en Home) | ✅ Conectado a `POST /gamification/predictions` (evento del seed; maneja `yaExistia` y `SALDO_INSUFICIENTE`) |
+| Primitivas UI | ✅ Estilo shadcn escritas a mano (el CLI de shadcn requería red externa no disponible); patrones cva + Slot |
+| Fuente | Inter autoalojada vía `@fontsource-variable/inter` (sin fetch a Google Fonts en build) |
+| Identidad | TEMPORAL: usuario demo del seed (`useSession` en Zustand) hasta módulo users (JWT) |
+| Pendiente Fase 3 parte 2 | Service worker/offline, Home con feed real (módulo sports/contenido), Zona de Juego, Tienda, Perfil reales |
+
+**Cómo correr el frontend:** `cd frontend && cp .env.example .env.local && npm install && npm run dev` → http://localhost:3001 (backend en :3000 con seed ejecutado). Build verificado: `npm run build` ✅ (7 rutas).
+
+## 4. Tareas Pendientes
+
+- [x] Revisión y aprobación formal del `schema.prisma` — aprobado 2026-07-03
+- [x] Aprobación de `06_arquitectura_nestjs.md` — aprobado 2026-07-03
+- [x] Fase 2 (parte 1): Vertical Slice Ledger + Gamification — código generado 2026-07-03
+- [x] Modelo `Prediccion` multi-modalidad (tipo + payload Json) + seed + smoke tests — 2026-07-03
+- [x] **Vertical Slice del Backend — APROBADO y COMPLETADO 2026-07-03**
+- [ ] **Fase 3: inicio del desarrollo del Frontend en Next.js (PWA + Tailwind + Shadcn/UI) — delegar a Chat Frontend** ← SIGUIENTE
+- [ ] Ejecutar en local (junto al arranque del Frontend): `npm install` + `prisma migrate dev` + `npm run seed` + `npm run smoke`
+- [ ] Fase 2 (parte 2): módulo `users` (auth JWT + refresh) y módulo `sports` (catálogo/eventos)
+- [ ] Extender schema: gamificación, pronósticos, marketplace, reservas (iteraciones futuras)
+
+---
+
+## Registro de cambios
+
+| Fecha | Chat | Cambio |
+|---|---|---|
+| 2026-07-03 | Arquitecto | Creación del archivo. Generado `schema.prisma` v1 (dominio abstracto + Ledger). Fase 1 en progreso. |
+| 2026-07-03 | Arquitecto | Schema aprobado. **Fase 1 completada.** Siguiente: Fase 2 — inicialización del backend NestJS (Chat Backend). |
+| 2026-07-03 | Backend | `06_arquitectura_nestjs.md` aprobado. Generado Vertical Slice en `backend/`: scaffold NestJS + módulo Ledger (entidad con invariantes, `registrarTransaccion()`, `GET /ledger/balance`, `GET /ledger/history`) + módulo Gamification (`POST /gamification/predictions`). Endpoints listos para probar; pendiente `npm install` + migración. |
+| 2026-07-03 | Backend | Schema extendido con `Prediccion` multi-modalidad (`tipo` String + `payload` Json, unique usuario+evento+tipo, `EstadoPrediccion`). Servicio de predicciones ahora persiste el pronóstico (catálogo de modalidades en dominio). Creados `prisma/seed.ts` y `scripts/smoke-tests.mjs` con 2 modalidades distintas (MARCADOR_EXACTO fútbol / PODIO F1). |
+| 2026-07-03 | Backend | Esquema, seed y tests aprobados. **Vertical Slice del Backend COMPLETADO.** Endpoints operativos: `GET /ledger/balance`, `GET /ledger/history`, `POST /gamification/predictions`. Siguiente paso inmediato: **Fase 3 — inicio del Frontend en Next.js (Chat Frontend)**. |
+| 2026-07-03 | Frontend | `06_design_system.md` creado y aprobado (análisis de `referencias_ui/`). Generada Fase 1 del frontend en `frontend/`: Next 16 + Tailwind v4 + Zustand, tokens del design system, AppShell + BottomTabBar (5 tabs), vertical Billetera conectada al Ledger y PredictionWidget (MARCADOR_EXACTO) contra `POST /gamification/predictions`. Build ✅. Pendiente: validación en local contra el backend. |

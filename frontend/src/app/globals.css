@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/**
+ * Tokens del Design System (06_design_system.md) — Tailwind v4 (CSS-first).
+ * Dark es el ÚNICO tema. Elevación por tono de superficie, nunca sombras.
+ * El acento `ticket` se reserva EXCLUSIVAMENTE para Tickets y CTAs primarios.
+ */
+@theme {
+  /* Superficies */
+  --color-background: #000000;
+  --color-surface: #141416;
+  --color-surface-raised: #1c1c1f;
+  --color-surface-overlay: #232327;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  /* Texto */
+  --color-foreground: #ffffff;
+  --color-foreground-secondary: #a1a1aa;
+  --color-foreground-muted: #63636b;
+
+  /* Acento de recompensa — SOLO Tickets y CTA principal */
+  --color-ticket: #d6f930;
+  --color-ticket-foreground: #0a0a0a;
+  --color-ticket-muted: rgba(214, 249, 48, 0.12);
+
+  /* Semánticos */
+  --color-live: #ff2e63;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Compatibilidad shadcn/ui */
+  --color-card: #141416;
+  --color-card-foreground: #ffffff;
+  --color-popover: #232327;
+  --color-popover-foreground: #ffffff;
+  --color-primary: #d6f930;
+  --color-primary-foreground: #0a0a0a;
+  --color-secondary: #1c1c1f;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #1c1c1f;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: #1c1c1f;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-input: #232327;
+  --color-ring: #d6f930;
+
+  /* Radios */
+  --radius-card: 1rem;   /* tarjetas */
+  --radius-row: 0.75rem; /* filas internas, inputs */
+
+  /* Tipografía */
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    background: var(--color-background);
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Números económicos y marcadores siempre tabulares */
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Builds
+.next/
+dist/
+out/
+
+# Entornos (¡nunca subir credenciales!)
+.env
+.env.local
+.env*.local
+
+# Sistema
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*

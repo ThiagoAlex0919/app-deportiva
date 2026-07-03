@@ -1,0 +1,511 @@
+// =====================================================================================
+// SCHEMA.PRISMA — Plataforma SaaS Deportiva | Fase 1: Modelado de Base de Datos
+// =====================================================================================
+// Alcance de esta fase (según 03_instrucciones_fable5.md):
+//   1. Abstracciones base del dominio: Deporte -> Competicion -> Temporada -> Evento
+//      -> Participante (jerarquía obligatoria de 02_modelo_de_dominio.md).
+//   2. Economía digital: Ledger inmutable de doble entrada para Tickets.
+//
+// Principios DDD aplicados:
+//   - El dominio es AGNÓSTICO al deporte: nada aquí asume fútbol, tenis ni F1.
+//     Lo específico de cada deporte vive en columnas `Json` (metadata/resultado),
+//     interpretadas por la capa de dominio, nunca por la base de datos.
+//   - Bounded Contexts desacoplados: el contexto "Economía" (Ledger) NO tiene
+//     foreign keys hacia Marketplace, Gamificación, etc. Usa referencias
+//     polimórficas (tipo + id) para no acoplar módulos que en el futuro
+//     podrían extraerse como microservicios.
+//   - IDs UUID: generables por la aplicación sin ida y vuelta a la BD, estables
+//     entre entornos y aptos para sistemas distribuidos.
+// =====================================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // PostgreSQL exigido por 01_vision_y_stack.md.
+  // NOTA (Prisma 7): la propiedad `url` ya no se declara en el schema.
+  // La conexión se configura por entorno (12-factor) en `prisma.config.ts`
+  // (para Migrate) y vía `adapter` en el constructor de PrismaClient (runtime).
+  // Si el backend fijara Prisma 6, restaurar: url = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+// =====================================================================================
+// CONTEXTO 1: DOMINIO DEPORTIVO ABSTRACTO
+// Jerarquía: Deporte -> Competicion -> Temporada -> Evento <-> Participante
+// =====================================================================================
+
+// -------------------------------------------------------------------------------------
+// DEPORTE — Raíz de agregado del dominio deportivo.
+// Es la entidad más abstracta del sistema: "Fútbol", "Tenis", "Fórmula 1" son FILAS,
+// no tablas. Esto garantiza que añadir un deporte nuevo sea una operación de datos,
+// no de código ni de migración.
+// -------------------------------------------------------------------------------------
+model Deporte {
+  id        String   @id @default(uuid())
+  // `slug` como identificador semántico estable para URLs y APIs públicas
+  // (ej. "futbol", "formula-1"). Único porque es la clave natural del negocio.
+  slug      String   @unique
+  nombre    String
+  // Cómo se compite en este deporte. Determina qué tipos de Participante son
+  // válidos y cómo interpretar resultados (la capa de dominio usa este valor
+  // como discriminador de estrategia — patrón Strategy).
+  formato   FormatoDeporte
+  // Configuración específica del deporte que la BD no necesita entender:
+  // reglas de puntuación, duración de partidos, número de sets, etc.
+  // Json y no columnas: mantiene la tabla abstracta y evita migraciones por deporte.
+  metadata  Json     @default("{}")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  competiciones Competicion[]
+  participantes Participante[]
+
+  @@map("deportes")
+}
+
+// Formato de participación: permite al dominio validar qué Participante puede
+// inscribirse y cómo se estructura un Evento (1v1, parrilla, N equipos...).
+enum FormatoDeporte {
+  EQUIPOS        // fútbol, baloncesto: N equipos por evento (normalmente 2)
+  INDIVIDUAL     // tenis, boxeo: atletas uno contra uno o en llaves
+  MULTITUDINARIO // F1, atletismo, ciclismo: muchos participantes en un mismo evento
+  MIXTO          // deportes con modalidades combinadas (ej. tenis dobles + singles)
+}
+
+// -------------------------------------------------------------------------------------
+// COMPETICION — Organización recurrente dentro de un deporte.
+// "LaLiga", "Roland Garros", "Mundial de F1". Es la entidad de larga vida;
+// lo que cambia año a año es la Temporada, no la Competición.
+// -------------------------------------------------------------------------------------
+model Competicion {
+  id        String   @id @default(uuid())
+  deporteId String
+  // onDelete: Restrict — nunca se borra en cascada un deporte con competiciones:
+  // la integridad histórica del ecosistema (pronósticos, ledger) depende de ello.
+  deporte   Deporte  @relation(fields: [deporteId], references: [id], onDelete: Restrict)
+  slug      String   @unique
+  nombre    String
+  // Estructura del torneo: informa a Pronósticos y a la UI cómo renderizar
+  // (tabla de posiciones vs. brackets vs. campeonato por puntos).
+  tipo      TipoCompeticion
+  // País/región, organizador, logo, etc. — atributos presentes pero no
+  // estructurales; de nuevo Json para no contaminar la abstracción.
+  metadata  Json     @default("{}")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  temporadas Temporada[]
+
+  // Búsqueda frecuente: "todas las competiciones de un deporte".
+  @@index([deporteId])
+  @@map("competiciones")
+}
+
+enum TipoCompeticion {
+  LIGA        // todos contra todos, tabla de posiciones
+  ELIMINACION // brackets / llaves
+  CAMPEONATO  // por acumulación de puntos en eventos (F1, MotoGP)
+  AMISTOSO    // eventos sin estructura competitiva formal
+  MIXTO       // fases de grupos + eliminación (mundiales)
+}
+
+// -------------------------------------------------------------------------------------
+// TEMPORADA — Instancia temporal de una Competición ("LaLiga 2025/26").
+// Separa la identidad permanente (Competición) de su ejecución periódica.
+// Los Eventos cuelgan de aquí: un pronóstico o ranking siempre está acotado
+// a una temporada concreta.
+// -------------------------------------------------------------------------------------
+model Temporada {
+  id            String      @id @default(uuid())
+  competicionId String
+  competicion   Competicion @relation(fields: [competicionId], references: [id], onDelete: Restrict)
+  nombre        String      // "2025/26", "Temporada 2026"
+  fechaInicio   DateTime
+  fechaFin      DateTime?   // nullable: puede no conocerse al crearla
+  estado        EstadoTemporada @default(PROGRAMADA)
+  metadata      Json        @default("{}")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  eventos       Evento[]
+  inscripciones TemporadaParticipante[]
+
+  @@index([competicionId, estado])
+  @@map("temporadas")
+}
+
+enum EstadoTemporada {
+  PROGRAMADA
+  EN_CURSO
+  FINALIZADA
+  CANCELADA
+}
+
+// -------------------------------------------------------------------------------------
+// EVENTO — Unidad atómica de actividad deportiva: un partido, una carrera, una etapa.
+// Es el punto de anclaje de los módulos transversales: Pronósticos, feed de
+// contenido y gamificación referencian Eventos, jamás conceptos específicos
+// de un deporte ("partido" o "gran premio" no existen como tablas).
+// -------------------------------------------------------------------------------------
+model Evento {
+  id          String    @id @default(uuid())
+  temporadaId String
+  temporada   Temporada @relation(fields: [temporadaId], references: [id], onDelete: Restrict)
+  nombre      String    // "Jornada 12: Real Madrid vs Barcelona", "GP de Mónaco"
+  // Agrupador opcional dentro de la temporada (jornada, ronda, fase).
+  // String y no FK: la semántica de "jornada" varía por deporte y no justifica
+  // una entidad propia en esta fase.
+  fase        String?
+  fechaInicio DateTime  // programada; el dominio la actualiza si hay aplazamiento
+  estado      EstadoEvento @default(PROGRAMADO)
+  // Resultado GLOBAL del evento en formato específico del deporte
+  // (ej. {"marcador": [2,1]} o {"vueltas": 78}). El resultado POR PARTICIPANTE
+  // vive en EventoParticipante. Json por la misma razón de abstracción.
+  resultado   Json?
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  participantes EventoParticipante[]
+  predicciones  Prediccion[]
+
+  // Consultas críticas del feed y de pronósticos: próximos eventos por estado/fecha.
+  @@index([temporadaId, estado])
+  @@index([fechaInicio])
+  @@map("eventos")
+}
+
+enum EstadoEvento {
+  PROGRAMADO
+  EN_VIVO    // habilita resultados en tiempo real (cacheados en Redis, no aquí)
+  FINALIZADO // dispara la resolución automática de pronósticos (oráculo)
+  POSPUESTO
+  CANCELADO
+}
+
+// -------------------------------------------------------------------------------------
+// PARTICIPANTE — Abstracción de quien compite: equipo, atleta, piloto, selección.
+// Una sola tabla polimórfica (discriminada por `tipo`) en lugar de tablas
+// Equipo/Atleta separadas: los módulos transversales (favoritos del usuario,
+// pronósticos, feed) necesitan referenciar "un participante" sin importar su clase.
+// -------------------------------------------------------------------------------------
+model Participante {
+  id        String   @id @default(uuid())
+  // Un participante pertenece a UN deporte. Si una entidad real compite en varios
+  // (un club polideportivo), se modela como N participantes — son identidades
+  // competitivas distintas con estadísticas distintas.
+  deporteId String
+  deporte   Deporte  @relation(fields: [deporteId], references: [id], onDelete: Restrict)
+  slug      String   @unique
+  nombre    String
+  tipo      TipoParticipante
+  // Escudo, país, dorsal, escudería... atributos variables por tipo y deporte.
+  metadata  Json     @default("{}")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventos       EventoParticipante[]
+  inscripciones TemporadaParticipante[]
+
+  @@index([deporteId, tipo])
+  @@map("participantes")
+}
+
+enum TipoParticipante {
+  EQUIPO
+  SELECCION
+  ATLETA
+  PILOTO
+  DUPLA // dobles en tenis, parejas en vóley playa
+}
+
+// -------------------------------------------------------------------------------------
+// TEMPORADA_PARTICIPANTE — Inscripción de un participante en una temporada.
+// Tabla puente necesaria porque la plantilla de una competición cambia por
+// temporada (ascensos, descensos, wildcard). Además acumula la clasificación
+// agregada (puntos, posición) que la UI de tablas consume.
+// -------------------------------------------------------------------------------------
+model TemporadaParticipante {
+  id             String       @id @default(uuid())
+  temporadaId    String
+  temporada      Temporada    @relation(fields: [temporadaId], references: [id], onDelete: Cascade)
+  participanteId String
+  participante   Participante @relation(fields: [participanteId], references: [id], onDelete: Restrict)
+  // Estadísticas agregadas de la temporada en formato del deporte
+  // ({"pj": 10, "pts": 22} o {"podios": 3, "pts": 156}). Se recalculan desde
+  // los eventos; son una proyección de lectura, no fuente de verdad.
+  clasificacion  Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Un participante solo puede inscribirse una vez por temporada.
+  @@unique([temporadaId, participanteId])
+  @@map("temporada_participantes")
+}
+
+// -------------------------------------------------------------------------------------
+// EVENTO_PARTICIPANTE — Relación N:M entre Evento y Participante con datos propios.
+// Soporta cualquier formato: 2 filas para un partido, 20 para una parrilla de F1.
+// -------------------------------------------------------------------------------------
+model EventoParticipante {
+  id             String       @id @default(uuid())
+  eventoId       String
+  evento         Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  participanteId String
+  participante   Participante @relation(fields: [participanteId], references: [id], onDelete: Restrict)
+  // Rol contextual: LOCAL/VISITANTE solo aplica a deportes de enfrentamiento;
+  // COMPETIDOR es el valor genérico para formatos multitudinarios.
+  rol            RolEvento    @default(COMPETIDOR)
+  // Resultado individual: {"goles": 2}, {"posicion": 1, "tiempo": "1:32:07"}...
+  resultado      Json?
+  // Posición final normalizada (1 = ganador). Columna real y no Json porque
+  // el oráculo de pronósticos y los rankings ordenan por ella con frecuencia.
+  posicionFinal  Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([eventoId, participanteId])
+  @@index([participanteId])
+  @@map("evento_participantes")
+}
+
+enum RolEvento {
+  LOCAL
+  VISITANTE
+  COMPETIDOR
+}
+
+// =====================================================================================
+// CONTEXTO 2: IDENTIDAD (mínimo indispensable para la Fase 1)
+// El módulo completo de Usuarios (auth JWT, roles, preferencias) se modela en
+// Fase 2. Aquí solo existe lo que el Ledger necesita: una identidad estable.
+// =====================================================================================
+
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  nombre    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // REGLA ESTRICTA (02_modelo_de_dominio.md): AQUÍ NO EXISTE CAMPO `saldoTickets`.
+  // El saldo es SIEMPRE derivado: SUM(créditos) - SUM(débitos) de su LedgerAccount.
+  // Un campo de saldo estático permitiría estados inconsistentes con el historial
+  // y rompería la auditabilidad. El cacheo del saldo es responsabilidad de Redis.
+  cuentaLedger LedgerAccount?
+
+  predicciones Prediccion[]
+
+  @@map("usuarios")
+}
+
+// =====================================================================================
+// CONTEXTO 3: ECONOMÍA DIGITAL — LEDGER DE TICKETS (doble entrada, inmutable)
+//
+// Diseño contable clásico de 3 niveles:
+//   LedgerAccount (cuentas) <- LedgerEntry (asientos) -> LedgerTransaction (operaciones)
+//
+// ¿Por qué doble entrada y no una simple tabla de movimientos?
+//   1. Conservación: los tickets no aparecen ni desaparecen; siempre se mueven
+//      DESDE una cuenta HACIA otra. La emisión sale de una cuenta de sistema
+//      (TESORERIA) y la redención vuelve a otra (REDENCION). Auditar la economía
+//      completa = verificar que el ledger cuadra a cero.
+//   2. Atomicidad: cada operación de negocio es UNA LedgerTransaction con N>=2
+//      asientos escritos en la misma transacción de BD (Prisma $transaction).
+//   3. Inmutabilidad: las filas del ledger NUNCA se actualizan ni borran.
+//      Un error se corrige con una transacción de reverso (motivo=REVERSO),
+//      preservando el rastro de auditoría. Por eso no hay `updatedAt` aquí.
+//
+// INVARIANTES aplicadas en la capa de dominio (Prisma no puede expresarlas):
+//   - Por transacción: SUM(asientos DEBITO) == SUM(asientos CREDITO).
+//   - `cantidad` > 0 siempre; el signo lo aporta `direccion`.
+//   - Una cuenta de USUARIO nunca queda con saldo negativo (verificación previa
+//     con lock optimista/serializable en el LedgerService, único escritor).
+// =====================================================================================
+
+// -------------------------------------------------------------------------------------
+// LEDGER_ACCOUNT — Toda tenencia de tickets es una cuenta, incluidas las del sistema.
+// Las cuentas de sistema (sin usuarioId) son la contrapartida contable que hace
+// posible la doble entrada: "otorgar 50 tickets" = débito TESORERIA / crédito usuario.
+// -------------------------------------------------------------------------------------
+model LedgerAccount {
+  id        String            @id @default(uuid())
+  tipo      TipoLedgerAccount
+  // Solo las cuentas de tipo USUARIO tienen dueño. @unique => exactamente una
+  // cuenta de tickets por usuario (multiwallet queda fuera del alcance actual).
+  usuarioId String?           @unique
+  usuario   Usuario?          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  // Código legible para cuentas de sistema ("TESORERIA", "REDENCION", "PROMOCIONES").
+  // Único para poder referenciarlas por nombre desde la configuración.
+  codigo    String?           @unique
+  createdAt DateTime          @default(now())
+
+  asientos LedgerEntry[]
+
+  @@map("ledger_accounts")
+}
+
+enum TipoLedgerAccount {
+  USUARIO   // billetera de un usuario final
+  TESORERIA // fuente de emisión: de aquí salen los tickets otorgados
+  REDENCION // sumidero: aquí llegan los tickets gastados/redimidos
+  PROMOCION // bolsas presupuestadas para campañas (permite limitar emisión por campaña)
+}
+
+// -------------------------------------------------------------------------------------
+// LEDGER_TRANSACTION — La operación de negocio (cabecera del asiento contable).
+// Cubre los campos mínimos exigidos por 02_modelo_de_dominio.md:
+//   origen/módulo responsable -> `modulo`     | motivo  -> `motivo`
+//   fecha -> `fecha`                          | usuario -> vía asientos/cuentas
+//   referencia -> `referenciaTipo/Id`         | cantidad -> en los asientos
+// -------------------------------------------------------------------------------------
+model LedgerTransaction {
+  id     String        @id @default(uuid())
+  fecha  DateTime      @default(now())
+  // Módulo del monolito que originó la operación. Enum cerrado: obliga a que
+  // cada nuevo módulo se registre explícitamente en el contrato de la economía.
+  modulo ModuloSistema
+  // Motivo de negocio normalizado; la descripción libre va en `descripcion`.
+  motivo MotivoTransaccion
+  descripcion String?
+  // Referencia POLIMÓRFICA al agregado de origen (ej. tipo="PEDIDO",
+  // id=uuid del pedido). Deliberadamente SIN foreign key: el bounded context
+  // Economía no debe conocer los esquemas de Marketplace/Gamificación (DDD).
+  // La integridad la garantiza el módulo emisor, dueño de esa referencia.
+  referenciaTipo String?
+  referenciaId   String?
+  // Clave de idempotencia provista por el módulo emisor. @unique garantiza a
+  // nivel de BD que un reintento (timeout, retry de cola) no duplique tickets.
+  idempotencyKey String @unique
+  // Si esta transacción revierte a otra, apunta a la original (auto-relación).
+  reversaDeId String?            @unique
+  reversaDe   LedgerTransaction? @relation("Reverso", fields: [reversaDeId], references: [id], onDelete: Restrict)
+  revertidaPor LedgerTransaction? @relation("Reverso")
+  createdAt   DateTime           @default(now())
+  // Sin updatedAt: registro inmutable por diseño.
+
+  asientos LedgerEntry[]
+
+  // Auditoría por módulo/fecha y búsqueda inversa "qué transacción generó este pedido".
+  @@index([modulo, fecha])
+  @@index([referenciaTipo, referenciaId])
+  @@map("ledger_transactions")
+}
+
+// Origen modular de la operación (02_modelo_de_dominio.md exige registrar el
+// "módulo responsable"). Refleja los bounded contexts de la plataforma.
+enum ModuloSistema {
+  GAMIFICACION // misiones, recompensas del motor de reglas
+  PRONOSTICOS  // aciertos en desafíos y pollas
+  MARKETPLACE  // pago/descuento con tickets en la tienda
+  RESERVAS     // beneficios o pagos en reserva de escenarios
+  CONTENIDO    // recompensas por consumo de contenido
+  USUARIOS     // bonos de registro, referidos
+  ADMIN        // ajustes manuales operados por un administrador
+}
+
+enum MotivoTransaccion {
+  RECOMPENSA     // emisión por acción gamificada
+  BONO           // emisión promocional (registro, campaña)
+  PAGO           // gasto de tickets como método de pago
+  DESCUENTO      // gasto parcial aplicado a una compra
+  REDENCION      // canje en catálogo de recompensas
+  TRANSFERENCIA  // movimiento entre cuentas de usuario (si el negocio lo habilita)
+  AJUSTE         // corrección administrativa (siempre con descripción)
+  REVERSO        // anulación de una transacción previa
+  EXPIRACION     // caducidad de tickets (política anti-inflación futura)
+}
+
+// -------------------------------------------------------------------------------------
+// LEDGER_ENTRY — El asiento: movimiento atómico sobre UNA cuenta.
+// Toda LedgerTransaction tiene >= 2 asientos que cuadran a cero.
+// El saldo de cualquier cuenta = SUM(CREDITO) - SUM(DEBITO) de sus asientos.
+// -------------------------------------------------------------------------------------
+model LedgerEntry {
+  id            String            @id @default(uuid())
+  transaccionId String
+  // Cascade: un asiento no tiene sentido sin su transacción; como las
+  // transacciones nunca se borran en producción, esto solo aplica a limpieza
+  // de entornos de prueba.
+  transaccion   LedgerTransaction @relation(fields: [transaccionId], references: [id], onDelete: Cascade)
+  cuentaId      String
+  cuenta        LedgerAccount     @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+  direccion     DireccionAsiento
+  // Int (no Decimal): los Tickets son unidades enteras indivisibles, lo que
+  // elimina toda aritmética de punto flotante. Siempre > 0 (invariante de dominio);
+  // el sentido del movimiento lo da `direccion`, como en contabilidad real.
+  cantidad      Int
+  createdAt     DateTime          @default(now())
+  // Sin updatedAt: inmutable.
+
+  // Índice CRÍTICO: cálculo de saldo e historial de billetera (04_sitemap_y_ux.md,
+  // sección Billetera) consultan por cuenta ordenando por fecha.
+  @@index([cuentaId, createdAt])
+  @@map("ledger_entries")
+}
+
+enum DireccionAsiento {
+  DEBITO  // resta de la cuenta (salida)
+  CREDITO // suma a la cuenta (entrada)
+}
+
+// =====================================================================================
+// CONTEXTO 4: PRONÓSTICOS (primer modelo — extensión aprobada del Vertical Slice)
+// Se ancla a Evento (jamás a conceptos específicos de un deporte) y su lado
+// económico vive en el Ledger vía referencia polimórfica (tipo="PRONOSTICO").
+// =====================================================================================
+
+// -------------------------------------------------------------------------------------
+// PREDICCION — Pronóstico de un usuario sobre un evento, en una modalidad concreta.
+//
+// `tipo` (modalidad) es String y NO enum, por la misma filosofía del resto del
+// schema: las modalidades varían por deporte ("MARCADOR_EXACTO" en fútbol,
+// "PODIO" en motor) y añadir una nueva debe ser una operación de dominio/datos,
+// no una migración de BD. El catálogo vigente lo valida la capa de dominio
+// (modules/gamification/domain/modalidades.ts).
+//
+// `payload` es la predicción en sí, con estructura flexible según deporte y
+// modalidad: {"marcador":[2,1]}, {"ganadorId":"<participanteId>"},
+// {"podio":["<id1>","<id2>","<id3>"]}... Lo interpreta el oráculo al resolver
+// el evento — la BD nunca necesita entenderlo (mismo principio que metadata/resultado).
+// -------------------------------------------------------------------------------------
+model Prediccion {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  eventoId  String
+  evento    Evento  @relation(fields: [eventoId], references: [id], onDelete: Restrict)
+  // Modalidad del pronóstico (ver nota superior).
+  tipo      String
+  // Estructura de datos flexible dependiente del deporte y la modalidad.
+  payload   Json
+  // Costo cobrado al crearla. Dato DENORMALIZADO de lectura: la fuente de
+  // verdad económica es el asiento del Ledger (referenciaTipo="PRONOSTICO",
+  // referenciaId=id de esta fila).
+  costoTickets Int
+  estado    EstadoPrediccion @default(PENDIENTE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Regla de negocio: UNA predicción por usuario, evento y modalidad.
+  // Alineada 1:1 con la idempotencyKey del cobro en el Ledger
+  // (`PRONOSTICO:{usuarioId}:{eventoId}:{tipo}`).
+  @@unique([usuarioId, eventoId, tipo])
+  // Resolución masiva por el oráculo cuando un evento finaliza.
+  @@index([eventoId, tipo])
+  // Vista "mis pronósticos" ordenada por fecha.
+  @@index([usuarioId, createdAt])
+  @@map("predicciones")
+}
+
+enum EstadoPrediccion {
+  PENDIENTE // el evento aún no se resuelve
+  ACERTADA  // el oráculo la validó; dispara recompensa vía Ledger
+  FALLADA   // no acertó; los tickets ya quedaron en REDENCION
+  ANULADA   // evento cancelado/pospuesto sin reprogramar -> reverso en el Ledger
+}
