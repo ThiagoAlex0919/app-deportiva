@@ -211,7 +211,58 @@ export function getHistory(cursor?: string, limit = 20) {
   return authFetch<HistorialResponse>(`/ledger/history?${params}`);
 }
 
+/* ----------------------- Sports (catálogo público) ---------------------- */
+
+export interface ParticipanteEvento {
+  id: string;
+  nombre: string;
+  slug: string;
+  rol: string; // LOCAL | VISITANTE | COMPETIDOR
+}
+
+export interface EventoCatalogo {
+  id: string;
+  nombre: string;
+  fase: string | null;
+  fechaInicio: string;
+  estado: string;
+  competicion: { nombre: string; slug: string };
+  /** `formato` es el discriminador de estrategia de la UI (doc 08):
+   *  EQUIPOS → widget marcador exacto; MULTITUDINARIO → widget podio. */
+  deporte: { nombre: string; slug: string; formato: string };
+  participantes: ParticipanteEvento[];
+}
+
+export interface EventosResponse {
+  eventos: EventoCatalogo[];
+  nextCursor: string | null;
+}
+
+/** Catálogo público: sin token (el Home funciona sin sesión). */
+export function getEventos(cursor?: string, limit = 20) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return request<EventosResponse>(`/sports/events?${params}`);
+}
+
 /* --------------------- Gamificación (Pronósticos) ----------------------- */
+
+export interface MiPrediccion {
+  prediccionId: string;
+  eventoId: string;
+  tipo: string;
+  payload: Record<string, unknown>;
+  costoTickets: number;
+  estado: string;
+  createdAt: string;
+}
+
+export function getMisPredicciones(eventoId?: string) {
+  const params = eventoId ? `?eventoId=${eventoId}` : "";
+  return authFetch<{ predicciones: MiPrediccion[] }>(
+    `/gamification/predictions/mine${params}`,
+  );
+}
 
 export interface CrearPrediccionInput {
   eventoId: string;

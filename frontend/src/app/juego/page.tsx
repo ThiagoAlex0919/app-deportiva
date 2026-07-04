@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
  */
 export default function JuegoPage() {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 lg:mx-auto lg:max-w-xl">
       <PageHeader title="Zona de Juego" />
       {["Misiones diarias", "Pronósticos", "Pollas comunitarias"].map(
         (seccion) => (

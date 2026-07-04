@@ -46,6 +46,19 @@ export class CrearPrediccionDto {
   costoTickets!: number;
 }
 
+/** Respuesta de GET /gamification/predictions/mine (doc 08). */
+export interface MisPrediccionesResponse {
+  predicciones: Array<{
+    prediccionId: string;
+    eventoId: string;
+    tipo: string;
+    payload: Record<string, unknown>;
+    costoTickets: number;
+    estado: string;
+    createdAt: string;
+  }>;
+}
+
 /** Respuesta del endpoint. */
 export interface PrediccionResponse {
   /** Id de la predicción persistida (= referenciaId en el ledger). */

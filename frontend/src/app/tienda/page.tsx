@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
  */
 export default function TiendaPage() {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 lg:mx-auto lg:max-w-xl">
       <PageHeader title="Tienda" />
       {["Artículos deportivos", "Canchas y escenarios"].map((seccion) => (
         <div key={seccion}>

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './shared/presentation/guards/jwt-auth.guard';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
 import { UsersModule } from './modules/users/users.module';
+import { SportsModule } from './modules/sports/sports.module';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule, // identidad: registra el JwtModule global que usa el guard
     LedgerModule,
     GamificationModule,
-    // Próximos: SportsModule (catálogo de deportes/eventos).
+    SportsModule, // catálogo público de deportes/eventos (doc 08)
   ],
   providers: [
     // Guard GLOBAL secure-by-default (07_modulo_users_jwt.md §2.3):

@@ -11,7 +11,7 @@ import { RequireSession } from "@/components/auth/require-session";
  */
 export default function BilleteraPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:mx-auto lg:max-w-xl">
       <PageHeader title="Billetera" />
       <RequireSession mensaje="Inicia sesión para ver tu saldo y movimientos.">
         <TicketBalance />

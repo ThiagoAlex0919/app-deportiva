@@ -23,7 +23,7 @@ const OPCIONES = [
 
 export default function PerfilPage() {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 lg:mx-auto lg:max-w-xl">
       <PageHeader title="Perfil" />
       <RequireSession mensaje="Inicia sesión para ver tu perfil.">
         <ContenidoPerfil />

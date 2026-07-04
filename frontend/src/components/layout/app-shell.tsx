@@ -1,13 +1,16 @@
 import { BottomTabBar } from "./bottom-tab-bar";
+import { SideNav } from "./side-nav";
 
 /**
- * Contenedor mobile-first: columna única max-w 480px centrada en desktop,
- * fondo negro, padding inferior para el tab bar fijo + safe-area PWA.
+ * Shell responsive:
+ *  - Mobile: columna única max-w 480px + BottomTabBar fijo (app nativa).
+ *  - Desktop (lg+): SideNav fija a la izquierda + contenido hasta 1024px.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-background">
-      <main className="flex-1 px-4 pb-[calc(80px+env(safe-area-inset-bottom))]">
+    <div className="min-h-dvh bg-background lg:pl-60">
+      <SideNav />
+      <main className="mx-auto w-full max-w-[480px] px-4 pb-[calc(80px+env(safe-area-inset-bottom))] lg:max-w-5xl lg:px-8 lg:pb-12">
         {children}
       </main>
       <BottomTabBar />

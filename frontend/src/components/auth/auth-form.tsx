@@ -40,7 +40,10 @@ export function AuthForm({ modo }: { modo: "login" | "registro" }) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3 pt-6">
+    <form
+      onSubmit={onSubmit}
+      className="flex w-full flex-col gap-3 pt-6 lg:mx-auto lg:max-w-md lg:pt-16"
+    >
       <h1 className="pb-2 text-2xl font-bold">
         {modo === "login" ? "Inicia sesión" : "Crea tu cuenta"}
       </h1>

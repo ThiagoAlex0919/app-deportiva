@@ -36,6 +36,7 @@ import {
 } from '../../domain/modalidades';
 import {
   CrearPrediccionDto,
+  MisPrediccionesResponse,
   PrediccionResponse,
 } from '../dto/crear-prediccion.dto';
 import { randomUUID } from 'node:crypto';
@@ -53,6 +54,33 @@ export class PrediccionesService {
     // tocar Prisma directamente (excepción pragmática y documentada).
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Pronósticos del usuario autenticado, opcionalmente filtrados por evento.
+   * Alimenta el widget del Home: mostrar "ya pronosticaste X" al cargar en
+   * lugar de descubrirlo con el `yaExistia` del POST (doc 08).
+   */
+  async listarMias(
+    usuarioId: string,
+    eventoId?: string,
+  ): Promise<MisPrediccionesResponse> {
+    const filas = await this.prisma.prediccion.findMany({
+      where: { usuarioId, ...(eventoId ? { eventoId } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: 100, // suficiente para la UI actual; paginar cuando exista historial largo
+    });
+    return {
+      predicciones: filas.map((p) => ({
+        prediccionId: p.id,
+        eventoId: p.eventoId,
+        tipo: p.tipo,
+        payload: p.payload as Record<string, unknown>,
+        costoTickets: p.costoTickets,
+        estado: p.estado,
+        createdAt: p.createdAt.toISOString(),
+      })),
+    };
+  }
 
   /**
    * Crea un pronóstico en la modalidad indicada, cobrando su inscripción.

@@ -46,6 +46,10 @@ export const IDS = {
   TEMPORADA_F1: '00000000-0000-4000-8000-0000000000a2',
   EVENTO_CLASICO: '00000000-0000-4000-8000-0000000000e1',
   EVENTO_GP: '00000000-0000-4000-8000-0000000000e2',
+  // Eventos extra (doc 08): llenan el carrusel del Home.
+  EVENTO_J2: '00000000-0000-4000-8000-0000000000e3',
+  EVENTO_J3: '00000000-0000-4000-8000-0000000000e4',
+  EVENTO_GP2: '00000000-0000-4000-8000-0000000000e5',
 } as const;
 
 const BONO_INICIAL = 500;
@@ -226,6 +230,64 @@ async function main(): Promise<void> {
     },
   });
 
+  // Eventos extra de fútbol (doc 08): más contenido para el carrusel del Home.
+  // Reutilizan a Madrid/Barsa invirtiendo la localía — suficiente para la demo.
+  const [atletico, sevilla] = await Promise.all(
+    [
+      { slug: 'atletico-madrid', nombre: 'Atlético de Madrid' },
+      { slug: 'sevilla-fc', nombre: 'Sevilla FC' },
+    ].map((e) =>
+      prisma.participante.upsert({
+        where: { slug: e.slug },
+        update: {},
+        create: {
+          deporteId: futbol.id,
+          slug: e.slug,
+          nombre: e.nombre,
+          tipo: TipoParticipante.EQUIPO,
+        },
+      }),
+    ),
+  );
+
+  for (const evento of [
+    {
+      id: IDS.EVENTO_J2,
+      nombre: 'Jornada 2: Atlético de Madrid vs Real Madrid',
+      fase: 'Jornada 2',
+      fechaInicio: new Date('2026-08-23T17:00:00Z'),
+      local: atletico.id,
+      visitante: madrid.id,
+    },
+    {
+      id: IDS.EVENTO_J3,
+      nombre: 'Jornada 3: FC Barcelona vs Sevilla FC',
+      fase: 'Jornada 3',
+      fechaInicio: new Date('2026-08-30T19:00:00Z'),
+      local: barsa.id,
+      visitante: sevilla.id,
+    },
+  ]) {
+    await prisma.evento.upsert({
+      where: { id: evento.id },
+      update: {},
+      create: {
+        id: evento.id,
+        temporadaId: IDS.TEMPORADA_LIGA,
+        nombre: evento.nombre,
+        fase: evento.fase,
+        fechaInicio: evento.fechaInicio,
+        estado: EstadoEvento.PROGRAMADO,
+        participantes: {
+          create: [
+            { participanteId: evento.local, rol: RolEvento.LOCAL },
+            { participanteId: evento.visitante, rol: RolEvento.VISITANTE },
+          ],
+        },
+      },
+    });
+  }
+
   // ------------------------------------------------------------------
   // 2. Dominio deportivo: FÓRMULA 1 (formato MULTITUDINARIO)
   // ------------------------------------------------------------------
@@ -291,6 +353,26 @@ async function main(): Promise<void> {
       nombre: 'Gran Premio de Mónaco',
       fase: 'Ronda 8',
       fechaInicio: new Date('2026-08-23T13:00:00Z'),
+      estado: EstadoEvento.PROGRAMADO,
+      participantes: {
+        create: pilotos.map((p) => ({
+          participanteId: p.id,
+          rol: RolEvento.COMPETIDOR,
+        })),
+      },
+    },
+  });
+
+  // GP extra (doc 08): segundo evento MULTITUDINARIO para el carrusel.
+  await prisma.evento.upsert({
+    where: { id: IDS.EVENTO_GP2 },
+    update: {},
+    create: {
+      id: IDS.EVENTO_GP2,
+      temporadaId: IDS.TEMPORADA_F1,
+      nombre: 'Gran Premio de Italia',
+      fase: 'Ronda 9',
+      fechaInicio: new Date('2026-09-06T13:00:00Z'),
       estado: EstadoEvento.PROGRAMADO,
       participantes: {
         create: pilotos.map((p) => ({
