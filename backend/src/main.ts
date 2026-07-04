@@ -29,10 +29,19 @@ async function bootstrap(): Promise<void> {
     .map((e) => e.slice(1)); // "*.vercel.app" -> ".vercel.app"
   app.enableCors({
     origin: (origin, callback) => {
+      // Requests sin header Origin (curl, server-to-server): permitidas.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      let hostname = '';
+      try {
+        hostname = new URL(origin).hostname;
+      } catch {
+        // Origin malformado: se trata como no permitido, jamás como crash.
+      }
       const permitido =
-        !origin || // requests sin Origin (curl, server-to-server)
-        exactos.includes(origin) ||
-        sufijos.some((s) => new URL(origin).hostname.endsWith(s));
+        exactos.includes(origin) || sufijos.some((s) => hostname.endsWith(s));
       callback(null, permitido);
     },
   });
