@@ -28,7 +28,12 @@ async function bootstrap(): Promise<void> {
     .filter((e) => e.startsWith('*.'))
     .map((e) => e.slice(1)); // "*.vercel.app" -> ".vercel.app"
   app.enableCors({
-    origin: (origin, callback) => {
+    // Tipos explícitos: la unión CorsOptions['origin'] impide que TS infiera
+    // los parámetros del callback (TS7006 con noImplicitAny).
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, permitir?: boolean) => void,
+    ) => {
       // Requests sin header Origin (curl, server-to-server): permitidas.
       if (!origin) {
         callback(null, true);

@@ -19,7 +19,13 @@ import { UsersController } from './presentation/controllers/users.controller';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_ACCESS_TTL ?? '15m' },
+      // Cast necesario: jsonwebtoken tipa expiresIn como su tipo StringValue
+      // ("15m", "7d"...) y una variable de entorno es string genérico (TS2322).
+      // El formato lo validan en runtime las propias libs de JWT.
+      signOptions: {
+        expiresIn: (process.env.JWT_ACCESS_TTL ??
+          '15m') as unknown as number,
+      },
     }),
     LedgerModule,
   ],
