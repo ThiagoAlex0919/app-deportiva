@@ -115,16 +115,19 @@ async function movimientoLedger(opts: {
   });
 }
 
-/** Siembra una predicción + su cobro, con la MISMA semántica que la API. */
+/**
+ * Siembra una predicción — GRATIS, misma semántica que la API.
+ * ECONOMÍA v2 (doc 09): pronosticar nunca cuesta Tickets; los usuarios solo
+ * GANAN (recompensas por acierto, vía oráculo). El único cobro del sistema
+ * será la inscripción a torneos con premio físico (módulo Pollas, futuro).
+ */
 async function sembrarPrediccion(opts: {
   usuarioId: string;
   eventoId: string;
   tipo: string;
   payload: object;
-  costoTickets: number;
-  descripcion: string;
 }): Promise<void> {
-  const prediccion = await prisma.prediccion.upsert({
+  await prisma.prediccion.upsert({
     where: {
       usuarioId_eventoId_tipo: {
         usuarioId: opts.usuarioId,
@@ -132,25 +135,16 @@ async function sembrarPrediccion(opts: {
         tipo: opts.tipo,
       },
     },
-    update: {},
+    // update fija costo 0: pronósticos sembrados con la economía v1 (cobrada)
+    // quedan normalizados en el próximo re-seed.
+    update: { costoTickets: 0 },
     create: {
       usuarioId: opts.usuarioId,
       eventoId: opts.eventoId,
       tipo: opts.tipo,
       payload: opts.payload,
-      costoTickets: opts.costoTickets,
+      costoTickets: 0,
     },
-  });
-
-  await movimientoLedger({
-    idempotencyKey: `PRONOSTICO:${opts.usuarioId}:${opts.eventoId}:${opts.tipo}`,
-    modulo: ModuloSistema.PRONOSTICOS,
-    motivo: MotivoTransaccion.PAGO,
-    descripcion: opts.descripcion,
-    referencia: { tipo: 'PRONOSTICO', id: prediccion.id },
-    desde: { usuarioId: opts.usuarioId },
-    hacia: { codigo: 'REDENCION', tipo: TipoLedgerAccount.REDENCION },
-    cantidad: opts.costoTickets,
   });
 }
 
@@ -423,8 +417,6 @@ async function main(): Promise<void> {
     eventoId: IDS.EVENTO_CLASICO,
     tipo: 'MARCADOR_EXACTO',
     payload: { marcador: [2, 1] }, // local 2 - 1 visitante
-    costoTickets: 50,
-    descripcion: 'Pronóstico MARCADOR_EXACTO — Real Madrid vs FC Barcelona',
   });
 
   await sembrarPrediccion({
@@ -432,8 +424,6 @@ async function main(): Promise<void> {
     eventoId: IDS.EVENTO_GP,
     tipo: 'PODIO',
     payload: { podio: pilotos.map((p) => p.id) }, // 1º, 2º y 3º pronosticados
-    costoTickets: 30,
-    descripcion: 'Pronóstico PODIO — Gran Premio de Mónaco',
   });
 
   // ------------------------------------------------------------------

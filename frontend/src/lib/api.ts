@@ -264,20 +264,18 @@ export function getMisPredicciones(eventoId?: string) {
   );
 }
 
+/** ECONOMÍA v2 (doc 09): pronosticar es gratis — sin costoTickets. */
 export interface CrearPrediccionInput {
   eventoId: string;
   tipo: string; // modalidad: GANADOR, MARCADOR_EXACTO, PODIO...
   payload: Record<string, unknown>;
-  costoTickets: number;
 }
 
 export interface PrediccionResponse {
   prediccionId: string;
-  ledgerTransactionId: string;
   eventoId: string;
   usuarioId: string;
   tipo: string;
-  costoTickets: number;
   estado: string;
   yaExistia: boolean;
 }

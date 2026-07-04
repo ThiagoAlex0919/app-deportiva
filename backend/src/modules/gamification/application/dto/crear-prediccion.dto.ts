@@ -4,15 +4,7 @@
  * Deuda técnica RESUELTA (07_modulo_users_jwt.md): el usuario ya no viaja
  * en el body — sale del access token vía @CurrentUser en el controller.
  */
-import { Type } from 'class-transformer';
-import {
-  IsInt,
-  IsObject,
-  IsString,
-  IsUUID,
-  Matches,
-  Min,
-} from 'class-validator';
+import { IsObject, IsString, IsUUID, Matches } from 'class-validator';
 
 export class CrearPrediccionDto {
   /** Evento (partido, carrera...) sobre el que se pronostica. */
@@ -39,11 +31,8 @@ export class CrearPrediccionDto {
   @IsObject({ message: 'payload debe ser un objeto' })
   payload!: Record<string, unknown>;
 
-  /** Costo de inscripción en Tickets (entero > 0). */
-  @Type(() => Number)
-  @IsInt()
-  @Min(1, { message: 'costoTickets debe ser al menos 1' })
-  costoTickets!: number;
+  // ECONOMÍA v2 (doc 09): pronosticar es GRATIS — ya no existe costoTickets.
+  // El cobro queda reservado a la inscripción de torneos (módulo futuro).
 }
 
 /** Respuesta de GET /gamification/predictions/mine (doc 08). */
@@ -61,14 +50,10 @@ export interface MisPrediccionesResponse {
 
 /** Respuesta del endpoint. */
 export interface PrediccionResponse {
-  /** Id de la predicción persistida (= referenciaId en el ledger). */
   prediccionId: string;
-  /** Transacción del ledger que cobró la inscripción. */
-  ledgerTransactionId: string;
   eventoId: string;
   usuarioId: string;
   tipo: string;
-  costoTickets: number;
   estado: string;
   /** true si esta llamada fue un reintento idempotente (ya existía). */
   yaExistia: boolean;

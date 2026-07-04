@@ -2,33 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSesion } from "@/components/auth/require-session";
-import { TicketBadge } from "@/components/economy/ticket-badge";
 import { crearPrediccion, ApiRequestError } from "@/lib/api";
-import { useSession } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 /**
  * Widget de pronóstico MARCADOR_EXACTO (POST /gamification/predictions).
+ * ECONOMÍA v2 (doc 09): pronosticar es GRATIS — el framing es de recompensa
+ * ("si aciertas, ganas Tickets"), nunca de costo.
  * Payload del catálogo del dominio: { "marcador": [local, visitante] }.
  * Idempotente por usuario+evento+modalidad → `yaExistia` en la respuesta.
- * El CTA usa el acento ticket: es LA acción económica primaria de la tarjeta.
  */
 export function PredictionWidget({
   eventoId,
   local,
   visitante,
-  costoTickets = 50,
+  onConfirmado,
 }: {
   eventoId: string;
   local: string;
   visitante: string;
-  costoTickets?: number;
+  onConfirmado?: (payload: Record<string, unknown>) => void;
 }) {
-  const debitar = useSession((s) => s.debitar);
   const { listo, autenticado } = useSesion();
   const [marcador, setMarcador] = useState<[number, number]>([0, 0]);
   const [enviando, setEnviando] = useState(false);
@@ -44,19 +42,19 @@ export function PredictionWidget({
   const confirmar = async () => {
     setEnviando(true);
     try {
+      const payload = { marcador };
       const r = await crearPrediccion({
         eventoId,
         tipo: "MARCADOR_EXACTO",
-        payload: { marcador },
-        costoTickets,
+        payload,
       });
       if (r.yaExistia) {
-        toast.info("Ya tenías un pronóstico para este partido (no se cobró).");
+        toast.info("Ya tenías un pronóstico para este partido.");
       } else {
-        debitar(costoTickets);
-        toast.success(`Pronóstico confirmado: −${costoTickets} Tickets`);
+        toast.success("¡Pronóstico registrado! Si aciertas, ganas Tickets.");
       }
       setConfirmado(true);
+      onConfirmado?.(payload);
     } catch (e) {
       toast.error(
         e instanceof ApiRequestError ? e.error.mensaje : "Error inesperado",
@@ -68,11 +66,15 @@ export function PredictionWidget({
 
   return (
     <div className="rounded-row bg-surface-raised p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm font-bold uppercase tracking-wide">
           Marcador exacto
         </span>
-        <TicketBadge cantidad={costoTickets} signo="-" />
+        {/* Recompensa, nunca costo (economía v2) */}
+        <span className="inline-flex items-center gap-1 rounded-full bg-ticket-muted px-2.5 py-1 text-[12px] font-bold text-ticket">
+          <Ticket size={13} />
+          Gana si aciertas
+        </span>
       </div>
 
       <div className="mb-4 flex items-center justify-center gap-6">
@@ -107,7 +109,6 @@ export function PredictionWidget({
       </div>
 
       {listo && !autenticado ? (
-        // Sin sesión no hay acción económica: el CTA invita a entrar.
         <Button asChild variant="secondary" fullWidth>
           <Link href="/login">Inicia sesión para pronosticar</Link>
         </Button>
@@ -123,7 +124,7 @@ export function PredictionWidget({
             ? "Pronóstico registrado ✓"
             : enviando
               ? "Confirmando…"
-              : `Confirmar pronóstico`}
+              : "Confirmar pronóstico"}
         </Button>
       )}
     </div>

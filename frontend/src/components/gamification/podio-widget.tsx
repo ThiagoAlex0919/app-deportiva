@@ -2,35 +2,32 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { TicketBadge } from "@/components/economy/ticket-badge";
 import { useSesion } from "@/components/auth/require-session";
 import {
   crearPrediccion,
   ApiRequestError,
   type ParticipanteEvento,
 } from "@/lib/api";
-import { useSession } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 /**
  * Widget PODIO para formatos MULTITUDINARIOS (F1, ciclismo... — doc 08).
+ * ECONOMÍA v2 (doc 09): gratis; framing de recompensa.
  * El usuario toca participantes en orden: 1º, 2º, 3º (tocar de nuevo lo quita).
  * Payload del catálogo del dominio: { "podio": [id1, id2, id3] }.
  */
 export function PodioWidget({
   eventoId,
   participantes,
-  costoTickets = 30,
   onConfirmado,
 }: {
   eventoId: string;
   participantes: ParticipanteEvento[];
-  costoTickets?: number;
   onConfirmado?: (payload: Record<string, unknown>) => void;
 }) {
-  const debitar = useSession((s) => s.debitar);
   const { listo, autenticado } = useSesion();
   const [podio, setPodio] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -45,17 +42,11 @@ export function PodioWidget({
     setEnviando(true);
     try {
       const payload = { podio };
-      const r = await crearPrediccion({
-        eventoId,
-        tipo: "PODIO",
-        payload,
-        costoTickets,
-      });
+      const r = await crearPrediccion({ eventoId, tipo: "PODIO", payload });
       if (r.yaExistia) {
-        toast.info("Ya tenías un podio para esta carrera (no se cobró).");
+        toast.info("Ya tenías un podio para esta carrera.");
       } else {
-        debitar(costoTickets);
-        toast.success(`Podio confirmado: −${costoTickets} Tickets`);
+        toast.success("¡Podio registrado! Si aciertas, ganas Tickets.");
       }
       setConfirmado(true);
       onConfirmado?.(payload);
@@ -70,11 +61,14 @@ export function PodioWidget({
 
   return (
     <div className="rounded-row bg-surface-raised p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-sm font-bold uppercase tracking-wide">
           Pronostica el podio
         </span>
-        <TicketBadge cantidad={costoTickets} signo="-" />
+        <span className="inline-flex items-center gap-1 rounded-full bg-ticket-muted px-2.5 py-1 text-[12px] font-bold text-ticket">
+          <Ticket size={13} />
+          Gana si aciertas
+        </span>
       </div>
 
       <div className="mb-4 flex flex-col gap-2">

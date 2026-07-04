@@ -29,7 +29,6 @@ import {
   RecursoNoEncontradoException,
 } from '../../../../shared/domain/exceptions/domain.exception';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
-import { LedgerService } from '../../../ledger/application/services/ledger.service';
 import {
   MODALIDADES_SOPORTADAS,
   esModalidadSoportada,
@@ -46,9 +45,9 @@ export class PrediccionesService {
   private readonly logger = new Logger(PrediccionesService.name);
 
   constructor(
-    // Fachada del Bounded Context Economía — la ÚNICA forma permitida
-    // de mover tickets desde este módulo.
-    private readonly ledgerService: LedgerService,
+    // NOTA ECONOMÍA v2: este servicio ya no toca el Ledger (pronosticar es
+    // gratis). El oráculo (recompensas por acierto) y el módulo de Torneos
+    // (inscripción con premio físico) volverán a inyectar LedgerService.
     // TODO(SportsModule): cuando exista la fachada EventosService, la
     // consulta de solo-lectura al Evento debe pasar por ella en lugar de
     // tocar Prisma directamente (excepción pragmática y documentada).
@@ -83,12 +82,20 @@ export class PrediccionesService {
   }
 
   /**
-   * Crea un pronóstico en la modalidad indicada, cobrando su inscripción.
+   * Crea un pronóstico en la modalidad indicada — GRATIS.
+   *
+   * ECONOMÍA v2 (doc 09, decisión de negocio 2026-07-03): los usuarios NUNCA
+   * pierden Tickets por pronosticar; solo GANAN (recompensa por acierto, la
+   * pagará el oráculo vía Ledger). El único cobro del sistema será la
+   * inscripción a TORNEOS con premio físico (módulo Pollas, fase futura) —
+   * ahí sí volverá a usarse LedgerService desde este Bounded Context.
+   *
+   * Idempotente por la unique (usuarioId, eventoId, tipo): repetir devuelve
+   * el pronóstico original con `yaExistia: true`.
    *
    * @throws DomainException (MODALIDAD_NO_SOPORTADA) si el tipo no está en el catálogo.
    * @throws RecursoNoEncontradoException si el evento no existe.
    * @throws DomainException (EVENTO_NO_APOSTABLE, 409) si el evento ya comenzó.
-   * @throws DomainException (SALDO_INSUFICIENTE, 409) si faltan tickets.
    */
   async crearPrediccion(
     // Identidad del access token (@CurrentUser del controller) — el cliente
@@ -120,75 +127,69 @@ export class PrediccionesService {
       );
     }
 
-    // 3. Cobro vía doble entrada, idempotente por usuario+evento+modalidad.
-    const prediccionId = randomUUID();
-    const idempotencyKey = `PRONOSTICO:${usuarioId}:${dto.eventoId}:${dto.tipo}`;
-
-    const tx = await this.ledgerService.registrarTransaccion({
-      modulo: 'PRONOSTICOS',
-      motivo: 'PAGO',
-      descripcion: `Pronóstico ${dto.tipo} — ${evento.nombre}`,
-      referencia: { tipo: 'PRONOSTICO', id: prediccionId },
-      idempotencyKey,
-      asientos: [
-        {
-          cuenta: { tipo: 'USUARIO', usuarioId: usuarioId },
-          direccion: 'DEBITO',
-          cantidad: dto.costoTickets,
-        },
-        {
-          cuenta: { tipo: 'SISTEMA', codigo: 'REDENCION' },
-          direccion: 'CREDITO',
-          cantidad: dto.costoTickets,
-        },
-      ],
-    });
-
-    // Si el ledger devolvió una transacción PREVIA (reintento idempotente),
-    // el id real de la predicción es el que viajó en ESA transacción.
-    const idReal = tx.referenciaId ?? prediccionId;
-    const yaExistia = tx.referenciaId !== prediccionId;
-
-    // 4. Persistir la predicción. Upsert por la unique compuesta:
-    //    - reintento normal => la fila ya existe, no se toca (update: {})
-    //    - crash entre cobro y persistencia => esta llamada la "repara".
-    const prediccion = await this.prisma.prediccion.upsert({
-      where: {
-        usuarioId_eventoId_tipo: {
-          usuarioId: usuarioId,
-          eventoId: dto.eventoId,
-          tipo: dto.tipo,
-        },
-      },
-      update: {},
-      create: {
-        id: idReal,
-        usuarioId: usuarioId,
+    // 3. Idempotencia: si ya existe la combinación usuario+evento+modalidad,
+    //    devolver el original sin efectos (no hay cobro que repetir).
+    const llave = {
+      usuarioId_eventoId_tipo: {
+        usuarioId,
         eventoId: dto.eventoId,
         tipo: dto.tipo,
-        payload: dto.payload as Prisma.InputJsonValue,
-        costoTickets: dto.costoTickets,
       },
+    };
+    const existente = await this.prisma.prediccion.findUnique({
+      where: llave,
     });
-
-    if (yaExistia) {
+    if (existente) {
       this.logger.log(
         `Pronóstico ${dto.tipo} ya existente (usuario ${usuarioId}, evento ${dto.eventoId})`,
       );
-    } else {
-      this.logger.log(
-        `Pronóstico ${prediccion.id} creado [${dto.tipo}] — tx ledger ${tx.id}`,
-      );
+      return this.aResponse(existente, true);
     }
 
+    // 4. Persistir. Ante una carrera (dos requests simultáneos), la unique
+    //    de la BD gana: P2002 se traduce al mismo camino idempotente.
+    try {
+      const prediccion = await this.prisma.prediccion.create({
+        data: {
+          usuarioId,
+          eventoId: dto.eventoId,
+          tipo: dto.tipo,
+          payload: dto.payload as Prisma.InputJsonValue,
+          costoTickets: 0, // pronosticar es gratis (economía v2)
+        },
+      });
+      this.logger.log(`Pronóstico ${prediccion.id} creado [${dto.tipo}]`);
+      return this.aResponse(prediccion, false);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const ganadora = await this.prisma.prediccion.findUniqueOrThrow({
+          where: llave,
+        });
+        return this.aResponse(ganadora, true);
+      }
+      throw e;
+    }
+  }
+
+  private aResponse(
+    p: {
+      id: string;
+      eventoId: string;
+      usuarioId: string;
+      tipo: string;
+      estado: string;
+    },
+    yaExistia: boolean,
+  ): PrediccionResponse {
     return {
-      prediccionId: prediccion.id,
-      ledgerTransactionId: tx.id,
-      eventoId: dto.eventoId,
-      usuarioId: usuarioId,
-      tipo: prediccion.tipo,
-      costoTickets: prediccion.costoTickets,
-      estado: prediccion.estado,
+      prediccionId: p.id,
+      eventoId: p.eventoId,
+      usuarioId: p.usuarioId,
+      tipo: p.tipo,
+      estado: p.estado,
       yaExistia,
     };
   }

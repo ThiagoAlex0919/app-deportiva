@@ -68,14 +68,9 @@ export function PredictionPanel({ evento }: { evento: EventoCatalogo }) {
         evento.participantes.find((p) => p.rol === "VISITANTE")?.nombre ??
         "Visitante"
       }
-      costoTickets={50}
     />
   ) : (
-    <PodioWidget
-      eventoId={evento.id}
-      participantes={evento.participantes}
-      costoTickets={30}
-    />
+    <PodioWidget eventoId={evento.id} participantes={evento.participantes} />
   );
 }
 
@@ -106,8 +101,8 @@ function ResumenPrediccion({
       <div className="min-w-0">
         <p className="text-sm font-bold">Ya pronosticaste</p>
         <p className="truncate text-[13px] text-foreground-secondary">
-          {detalle} · {prediccion.costoTickets} Tickets ·{" "}
-          {prediccion.estado.toLowerCase()}
+          {detalle} · {prediccion.estado.toLowerCase()} — si aciertas, ganas
+          Tickets
         </p>
       </div>
     </div>

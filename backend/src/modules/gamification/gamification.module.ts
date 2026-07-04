@@ -9,12 +9,12 @@
  * por ahora aloja el primer caso de uso económico: pronósticos.
  */
 import { Module } from '@nestjs/common';
-import { LedgerModule } from '../ledger/ledger.module';
 import { PrediccionesService } from './application/services/predicciones.service';
 import { PrediccionesController } from './presentation/controllers/predicciones.controller';
 
 @Module({
-  imports: [LedgerModule],
+  // ECONOMÍA v2: sin imports del Ledger — pronosticar es gratis. El oráculo
+  // y el módulo de Torneos reintroducirán LedgerModule cuando paguen/cobren.
   controllers: [PrediccionesController],
   providers: [PrediccionesService],
 })
