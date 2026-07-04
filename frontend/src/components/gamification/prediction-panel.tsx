@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Trophy, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TicketBadge } from "@/components/economy/ticket-badge";
 import { useSesion } from "@/components/auth/require-session";
 import { PredictionWidget } from "./prediction-widget";
 import { PodioWidget } from "./podio-widget";
@@ -74,7 +75,12 @@ export function PredictionPanel({ evento }: { evento: EventoCatalogo }) {
   );
 }
 
-/** "Ya pronosticaste": resumen legible del payload según la modalidad. */
+/**
+ * "Ya pronosticaste": resumen del payload + estado del oráculo (doc 10).
+ *  - PENDIENTE: neutro ("si aciertas, ganas Tickets")
+ *  - ACERTADA: success + recompensa ganada
+ *  - FALLADA/ANULADA: gris, sin drama (no se pierde nada — economía v2)
+ */
 function ResumenPrediccion({
   prediccion,
   participantes,
@@ -95,16 +101,38 @@ function ResumenPrediccion({
       )
       .join(" · ");
   }
+
+  const acertada = prediccion.estado === "ACERTADA";
+  const fallada =
+    prediccion.estado === "FALLADA" || prediccion.estado === "ANULADA";
+
   return (
     <div className="flex items-center gap-3 rounded-row bg-surface-raised p-4">
-      <CheckCircle2 size={22} className="shrink-0 text-success" />
-      <div className="min-w-0">
-        <p className="text-sm font-bold">Ya pronosticaste</p>
+      {acertada ? (
+        <Trophy size={22} className="shrink-0 text-success" />
+      ) : fallada ? (
+        <XCircle size={22} className="shrink-0 text-foreground-muted" />
+      ) : (
+        <CheckCircle2 size={22} className="shrink-0 text-success" />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold">
+          {acertada
+            ? "¡Acertaste!"
+            : fallada
+              ? prediccion.estado === "ANULADA"
+                ? "Evento anulado"
+                : "No acertaste esta vez"
+              : "Ya pronosticaste"}
+        </p>
         <p className="truncate text-[13px] text-foreground-secondary">
-          {detalle} · {prediccion.estado.toLowerCase()} — si aciertas, ganas
-          Tickets
+          {detalle}
+          {!acertada && !fallada && " — si aciertas, ganas Tickets"}
         </p>
       </div>
+      {acertada && prediccion.recompensaTickets && (
+        <TicketBadge cantidad={prediccion.recompensaTickets} signo="+" />
+      )}
     </div>
   );
 }

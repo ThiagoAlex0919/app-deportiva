@@ -1,0 +1,6 @@
+{
+  "_comentario": "Recompensas en Tickets por acierto, por modalidad (doc 10). ⚠️ VALORES DUMMY: pendiente aterrizarlos con el modelo de negocio (rentabilidad vs atractivo). Editar aquí y redesplegar; el motor de reglas configurable en caliente llegará después.",
+  "MARCADOR_EXACTO": 200,
+  "GANADOR": 75,
+  "PODIO": 250
+}

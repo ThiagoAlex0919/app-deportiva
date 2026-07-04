@@ -33,6 +33,7 @@ import {
   MODALIDADES_SOPORTADAS,
   esModalidadSoportada,
 } from '../../domain/modalidades';
+import { recompensaPorModalidad } from '../../domain/recompensas';
 import {
   CrearPrediccionDto,
   MisPrediccionesResponse,
@@ -74,8 +75,15 @@ export class PrediccionesService {
         eventoId: p.eventoId,
         tipo: p.tipo,
         payload: p.payload as Record<string, unknown>,
-        costoTickets: p.costoTickets,
         estado: p.estado,
+        // Recompensa pagada al acertar (desde config/recompensas.json).
+        // NOTA: si el negocio cambia los montos, las ACERTADAS históricas
+        // mostrarían el monto nuevo — aceptable con valores dummy; al
+        // aterrizar el modelo, leer el monto real desde el Ledger.
+        recompensaTickets:
+          p.estado === 'ACERTADA' && esModalidadSoportada(p.tipo)
+            ? recompensaPorModalidad(p.tipo)
+            : null,
         createdAt: p.createdAt.toISOString(),
       })),
     };

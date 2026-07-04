@@ -252,8 +252,9 @@ export interface MiPrediccion {
   eventoId: string;
   tipo: string;
   payload: Record<string, unknown>;
-  costoTickets: number;
-  estado: string;
+  estado: string; // PENDIENTE | ACERTADA | FALLADA | ANULADA
+  /** Tickets ganados si ACERTADA (doc 10); null en el resto. */
+  recompensaTickets: number | null;
   createdAt: string;
 }
 

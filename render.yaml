@@ -32,3 +32,7 @@ services:
       # Render genera un valor aleatorio en la creación y lo persiste.
       - key: JWT_SECRET
         generateValue: true
+      # API key del backoffice (doc 10): protege POST /admin/events/:id/finish.
+      # Leerla en el dashboard de Render (Environment) para usarla con curl.
+      - key: ADMIN_API_KEY
+        generateValue: true

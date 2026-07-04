@@ -35,15 +35,16 @@ export class CrearPrediccionDto {
   // El cobro queda reservado a la inscripción de torneos (módulo futuro).
 }
 
-/** Respuesta de GET /gamification/predictions/mine (doc 08). */
+/** Respuesta de GET /gamification/predictions/mine (docs 08/10). */
 export interface MisPrediccionesResponse {
   predicciones: Array<{
     prediccionId: string;
     eventoId: string;
     tipo: string;
     payload: Record<string, unknown>;
-    costoTickets: number;
     estado: string;
+    /** Tickets ganados si estado=ACERTADA; null en el resto. */
+    recompensaTickets: number | null;
     createdAt: string;
   }>;
 }

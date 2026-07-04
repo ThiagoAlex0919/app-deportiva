@@ -1,15 +1,20 @@
 /**
- * SportsModule — Bounded Context del catálogo deportivo (doc 08).
- * Solo lectura en esta fase. No exporta fachada todavía: cuando Gamification
- * necesite validar eventos vía fachada (TODO en PrediccionesService), este
- * módulo exportará EventosService.
+ * SportsModule — Bounded Context del catálogo deportivo (docs 08/10).
+ *
+ * Lectura pública (EventosController) + backoffice de cierre de eventos
+ * (AdminEventosController → Oráculo). Importa GamificationModule SOLO por
+ * su fachada exportada (OraculoService) — regla del monolito modular.
  */
 import { Module } from '@nestjs/common';
+import { GamificationModule } from '../gamification/gamification.module';
 import { EventosService } from './application/services/eventos.service';
+import { AdminEventosService } from './application/services/admin-eventos.service';
 import { EventosController } from './presentation/controllers/eventos.controller';
+import { AdminEventosController } from './presentation/controllers/admin-eventos.controller';
 
 @Module({
-  controllers: [EventosController],
-  providers: [EventosService],
+  imports: [GamificationModule],
+  controllers: [EventosController, AdminEventosController],
+  providers: [EventosService, AdminEventosService],
 })
 export class SportsModule {}
