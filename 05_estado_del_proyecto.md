@@ -116,6 +116,8 @@ Verificación estática realizada: imports resuelven, modelos/campos/códigos de
 
 **Cómo correr el frontend:** `cd frontend && cp .env.example .env.local && npm install && npm run dev` → http://localhost:3001 (backend en :3000 con seed ejecutado). Build verificado: `npm run build` ✅ (7 rutas).
 
+**Operación del arranque (optimizado):** el startCommand de Render ya NO corre el seed (~40s ahorrados por arranque); solo `db push` (~2s) + `node dist/main`. Si cambia `prisma/seed.ts`: poner `SEED_ON_BOOT=true` en Environment, dejar arrancar una vez, y volverla a `false`. Además, `.github/workflows/keep-alive.yml` hace ping cada 10 min para que el plan free no se duerma (el despertar de ~50s es plataforma de Render y solo lo elimina un plan pago o el keep-alive).
+
 ## 4. Tareas Pendientes
 
 - [x] Revisión y aprobación formal del `schema.prisma` — aprobado 2026-07-03

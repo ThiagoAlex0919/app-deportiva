@@ -15,10 +15,12 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build
-    # db push: sincroniza el schema sin carpeta de migraciones (la migración
-    # formal `prisma migrate dev` sigue pendiente de ejecutarse en local — doc 05).
-    # El seed es idempotente: correrlo en cada deploy es seguro.
-    startCommand: npx prisma db push --accept-data-loss && npm run seed && npm run start:prod
+    # ARRANQUE OPTIMIZADO (medido en producción):
+    #  - db push sin cambios: ~2s → se queda (aplica cambios de schema solos).
+    #  - seed: ~40s por arranque (ts-node + upserts) → CONDICIONAL: solo corre
+    #    con SEED_ON_BOOT=true. Ponerla en true (Environment) cuando cambie
+    #    prisma/seed.ts, dejar que arranque una vez, y volverla a false.
+    startCommand: npx prisma db push --accept-data-loss && (test "$SEED_ON_BOOT" != "true" || npm run seed) && npm run start:prod
     envVars:
       - key: NODE_VERSION
         value: 22.12.0
@@ -36,3 +38,6 @@ services:
       # Leerla en el dashboard de Render (Environment) para usarla con curl.
       - key: ADMIN_API_KEY
         generateValue: true
+      # Seed en el arranque: solo activarlo cuando cambie prisma/seed.ts.
+      - key: SEED_ON_BOOT
+        value: "false"

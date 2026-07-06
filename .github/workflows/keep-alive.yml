@@ -1,0 +1,23 @@
+# Mantiene despierta la API en el plan free de Render (se duerme tras ~15 min
+# sin tráfico y despertar cuesta ~50s). Un ping cada 10 minutos la mantiene
+# caliente — GitHub Actions es gratis para esto y vive en el propio repo.
+#
+# Nota: consume horas del plan free de Render (~744h/mes por servicio, alcanza
+# para 1 servicio siempre encendido). Para pausarlo: desactivar el workflow
+# en la pestaña Actions de GitHub.
+name: keep-alive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # cada 10 min (GitHub puede retrasarlo unos minutos)
+  workflow_dispatch: {} # permite dispararlo a mano
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API (endpoint público más barato)
+        run: |
+          curl -sS -o /dev/null -w "HTTP %{http_code} en %{time_total}s\n" \
+            --max-time 90 \
+            "https://app-deportiva-api.onrender.com/api/v1/sports/events?limit=1" || true
