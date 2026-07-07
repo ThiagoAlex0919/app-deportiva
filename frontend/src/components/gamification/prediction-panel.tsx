@@ -59,6 +59,18 @@ export function PredictionPanel({ evento }: { evento: EventoCatalogo }) {
     );
   }
 
+  // Partidos en vivo o cerrados no aceptan pronósticos nuevos (regla del
+  // dominio EVENTO_NO_APOSTABLE — aquí solo se comunica antes del 409).
+  if (evento.estado !== "PROGRAMADO") {
+    return (
+      <div className="rounded-row bg-surface-raised p-4 text-center text-sm text-foreground-secondary">
+        {evento.estado === "EN_VIVO"
+          ? "El partido está en juego — los pronósticos se cerraron al inicio."
+          : "Este evento ya no acepta pronósticos."}
+      </div>
+    );
+  }
+
   return esEquipos ? (
     <PredictionWidget
       eventoId={evento.id}

@@ -41,3 +41,7 @@ services:
       # Seed en el arranque: solo activarlo cuando cambie prisma/seed.ts.
       - key: SEED_ON_BOOT
         value: "false"
+      # Token de football-data.org (doc 12) — se pega A MANO en el dashboard
+      # (sync: false evita que el blueprint lo pise; JAMÁS se commitea).
+      - key: FOOTBALL_DATA_TOKEN
+        sync: false

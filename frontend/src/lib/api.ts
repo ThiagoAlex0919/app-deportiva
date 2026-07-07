@@ -218,6 +218,8 @@ export interface ParticipanteEvento {
   nombre: string;
   slug: string;
   rol: string; // LOCAL | VISITANTE | COMPETIDOR
+  /** Escudo real del equipo (sync de fixtures, doc 12). */
+  imagenUrl: string | null;
 }
 
 export interface EventoCatalogo {

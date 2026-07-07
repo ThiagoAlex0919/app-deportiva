@@ -10,6 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { EstadoEvento, Prisma } from '@prisma/client';
 import { RecursoNoEncontradoException } from '../../../../shared/domain/exceptions/domain.exception';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
+import { FixturesSyncService } from './fixtures-sync.service';
 import {
   EventoResponse,
   EventosResponse,
@@ -27,20 +28,31 @@ type EventoConRelaciones = Prisma.EventoGetPayload<{
 
 @Injectable()
 export class EventosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fixturesSync: FixturesSyncService,
+  ) {}
 
   /**
    * Próximos eventos ordenados por fecha, paginados por cursor.
    * Orden estable: (fechaInicio, id) — el id desempata fechas idénticas,
    * requisito para que el cursor no salte ni repita filas.
+   * Sin `estado` explícito devuelve los ACTIVOS (PROGRAMADO + EN_VIVO).
    */
   async listar(opciones: {
-    estado: EstadoEvento;
+    estado?: EstadoEvento;
     cursor?: string;
     limit: number;
   }): Promise<EventosResponse> {
+    // Partidos reales frescos (caché 30 min — doc 12) antes de consultar.
+    await this.fixturesSync.sincronizarSiVencio();
+
     const filas = await this.prisma.evento.findMany({
-      where: { estado: opciones.estado },
+      where: {
+        estado: opciones.estado ?? {
+          in: [EstadoEvento.PROGRAMADO, EstadoEvento.EN_VIVO],
+        },
+      },
       orderBy: [{ fechaInicio: 'asc' }, { id: 'asc' }],
       // take limit+1: la fila extra revela si existe página siguiente.
       take: opciones.limit + 1,
@@ -88,6 +100,9 @@ export class EventosService {
         nombre: p.participante.nombre,
         slug: p.participante.slug,
         rol: p.rol,
+        imagenUrl:
+          ((p.participante.metadata as { crest?: string } | null)?.crest ??
+            null),
       })),
     };
   }

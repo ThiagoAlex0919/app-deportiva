@@ -67,20 +67,46 @@ function VersusLayout({
 }) {
   const local = evento.participantes.find((p) => p.rol === "LOCAL");
   const visitante = evento.participantes.find((p) => p.rol === "VISITANTE");
+  const enVivo = evento.estado === "EN_VIVO";
   return (
     <div className="flex items-center justify-between">
-      <Escudo nombre={local?.nombre ?? "?"} />
-      <div className="flex flex-col items-center">
-        <span className="text-[13px] text-foreground-secondary">{dia}</span>
-        <span className="nums text-4xl font-black tracking-tight">{hora}</span>
+      <Escudo nombre={local?.nombre ?? "?"} imagenUrl={local?.imagenUrl} />
+      <div className="flex flex-col items-center gap-1">
+        {enVivo ? (
+          <span className="flex items-center gap-1.5 rounded-full bg-live/10 px-3 py-1 text-[13px] font-bold text-live">
+            <span className="size-1.5 animate-pulse rounded-full bg-live" />
+            EN VIVO
+          </span>
+        ) : (
+          <>
+            <span className="text-[13px] text-foreground-secondary">
+              {dia}
+            </span>
+            <span className="nums text-4xl font-black tracking-tight">
+              {hora}
+            </span>
+          </>
+        )}
       </div>
-      <Escudo nombre={visitante?.nombre ?? "?"} />
+      <Escudo
+        nombre={visitante?.nombre ?? "?"}
+        imagenUrl={visitante?.imagenUrl}
+      />
     </div>
   );
 }
 
-/** Escudo placeholder: iniciales en círculo hasta tener assets reales. */
-function Escudo({ nombre, className }: { nombre: string; className?: string }) {
+/* eslint-disable @next/next/no-img-element */
+/** Escudo real (sync doc 12) con fallback a iniciales. */
+function Escudo({
+  nombre,
+  imagenUrl,
+  className,
+}: {
+  nombre: string;
+  imagenUrl?: string | null;
+  className?: string;
+}) {
   const iniciales = nombre
     .split(" ")
     .filter((w) => w[0] === w[0]?.toUpperCase())
@@ -89,9 +115,18 @@ function Escudo({ nombre, className }: { nombre: string; className?: string }) {
     .slice(0, 3);
   return (
     <div className={cn("flex w-24 flex-col items-center gap-2", className)}>
-      <span className="flex size-14 items-center justify-center rounded-full bg-surface-overlay text-lg font-bold ring-1 ring-border">
-        {iniciales}
-      </span>
+      {imagenUrl ? (
+        <img
+          src={imagenUrl}
+          alt=""
+          loading="lazy"
+          className="size-14 object-contain drop-shadow"
+        />
+      ) : (
+        <span className="flex size-14 items-center justify-center rounded-full bg-surface-overlay text-lg font-bold ring-1 ring-border">
+          {iniciales}
+        </span>
+      )}
       <span className="line-clamp-2 text-center text-[13px] font-medium">
         {nombre}
       </span>

@@ -1,0 +1,21 @@
+[
+  {
+    "_comentario": "Competiciones a sincronizar desde football-data.org (doc 12). Editable sin código: añadir un torneo = una línea con su código del catálogo de football-data. Tipos: LIGA | ELIMINACION | CAMPEONATO | AMISTOSO | MIXTO.",
+    "codigo": "WC",
+    "slug": "mundial",
+    "nombre": "Copa Mundial de la FIFA",
+    "tipo": "MIXTO"
+  },
+  {
+    "codigo": "PD",
+    "slug": "laliga",
+    "nombre": "LaLiga",
+    "tipo": "LIGA"
+  },
+  {
+    "codigo": "CL",
+    "slug": "champions-league",
+    "nombre": "UEFA Champions League",
+    "tipo": "MIXTO"
+  }
+]

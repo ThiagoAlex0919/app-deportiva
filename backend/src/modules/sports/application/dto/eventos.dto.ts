@@ -12,9 +12,10 @@ import { EstadoEvento } from '@prisma/client';
 
 /** Query de GET /sports/events */
 export class ConsultarEventosQueryDto {
+  /** Omitir = "activos" (PROGRAMADO + EN_VIVO): lo que el Home necesita. */
   @IsOptional()
   @IsEnum(EstadoEvento)
-  estado: EstadoEvento = EstadoEvento.PROGRAMADO;
+  estado?: EstadoEvento;
 
   /** Id del último evento visto; omitir para la primera página. */
   @IsOptional()
@@ -34,6 +35,8 @@ export interface ParticipanteEventoResponse {
   nombre: string;
   slug: string;
   rol: string; // LOCAL | VISITANTE | COMPETIDOR
+  /** Escudo/foto real (metadata.crest del sync de fixtures — doc 12). */
+  imagenUrl: string | null;
 }
 
 export interface EventoResponse {
