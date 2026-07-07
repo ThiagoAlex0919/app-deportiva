@@ -48,6 +48,11 @@
 | `GET /api/v1/sports/events/:id` | Detalle de un evento |
 | `GET /api/v1/content/news?deporte=&cursor=&limit=` | Feed público de noticias (agregación RSS con caché de 15 min) |
 | `GET /api/v1/content/news/:id` | Detalle de una noticia (página interna `/noticia/[id]`) |
+| `GET /api/v1/marketplace/products` | Catálogo público de la Tienda + reglas de descuento (configs editables) |
+| 🔒 `POST /api/v1/marketplace/orders` | Checkout: cobra Tickets como DESCUENTO vía Ledger (idempotente) → orden PENDIENTE_PAGO |
+| 🔒 `GET /api/v1/marketplace/orders/mine` | Mis pedidos con estado |
+| 🔑 `POST /api/v1/admin/marketplace/orders/:id/status` | Backoffice: PAGADA/ENVIADA/ENTREGADA/CANCELADA (cancelar reversa los tickets) |
+| 🔑 `POST /api/v1/admin/users/reset-password` | Backoffice: resetea contraseña y revoca sesiones |
 
 *Deuda técnica RESUELTA (2026-07-03, `07_modulo_users_jwt.md`):* el `usuarioId` ya NO viaja por query/body — sale del access token (`@CurrentUser`). Guard global secure-by-default (`@Public()` solo en `/auth/*`). Errores de negocio: `{ statusCode, codigo, mensaje, timestamp, path }`. Usuarios del seed: `demo@app-deportivo.test` / `tester@app-deportivo.test`, password `demo1234`.
 *⚠️ Pendiente:* `backend/scripts/smoke-tests.mjs` sigue usando el contrato viejo (usuarioId por query) — actualizarlo para el flujo con auth.
@@ -153,6 +158,7 @@ Verificación estática realizada: imports resuelven, modelos/campos/códigos de
 
 | Fecha | Chat | Cambio |
 |---|---|---|
+| 2026-07-07 | Full-stack | **MARKETPLACE — TIENDA** (`15_marketplace_tienda.md` aprobado): modelo `Orden` (snapshot de producto), catálogo y reglas en configs editables (`productos.json`, `marketplace.json` — ⚠️ valores dummy: 1🎟=$50 COP, tope 30%), checkout que cobra Tickets como DESCUENTO vía Ledger (idempotente, `SALDO_INSUFICIENTE` si no alcanzan) y REVERSO automático al cancelar. Frontend `/tienda`: grid imagen-protagonista con badge "Hasta −30%", panel de compra con simulador de descuento en vivo (slider), mis pedidos con estados. **v1 SIN pasarela** (pago coordinado manualmente + backoffice); v2: Wompi/MercadoPago cuando exista cuenta de comercio. |
 | 2026-07-07 | Full-stack | **ZONA DE JUEGO** (`14_zona_de_juego.md` aprobado): `predictions/mine` enriquecido (join de evento+participantes, `resumen` con aciertos/precisión/tickets ganados). Página `/juego`: marcador personal (4 stat-cards, tickets con acento), tabs En juego/Resueltos con tarjetas de pronóstico (banderas apiladas, pick legible, chip de estado/recompensa), "te faltan por pronosticar" (catálogo − tuyos) y teasers de Pollas/Misiones. |
 | 2026-07-03 | Arquitecto | Creación del archivo. Generado `schema.prisma` v1 (dominio abstracto + Ledger). Fase 1 en progreso. |
 | 2026-07-03 | Arquitecto | Schema aprobado. **Fase 1 completada.** Siguiente: Fase 2 — inicialización del backend NestJS (Chat Backend). |

@@ -1,0 +1,5 @@
+{
+  "_comentario": "Reglas del descuento por Tickets en la Tienda (doc 15). ⚠️ VALORES DUMMY: aterrizar con el modelo de negocio (misma tarea que recompensas.json). Editar y redesplegar.",
+  "valorTicketCop": 50,
+  "maxDescuentoPorcentaje": 30
+}

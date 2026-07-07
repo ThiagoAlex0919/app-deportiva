@@ -318,6 +318,61 @@ export function getNoticia(id: string) {
   return request<Noticia>(`/content/news/${id}`);
 }
 
+/* ----------------------- Marketplace (Tienda) --------------------------- */
+
+export interface Producto {
+  slug: string;
+  nombre: string;
+  descripcion: string | null;
+  precioCop: number;
+  imagenUrl: string | null;
+  categoria: string | null;
+}
+
+export interface ReglasDescuento {
+  valorTicketCop: number;
+  maxDescuentoPorcentaje: number;
+}
+
+/** Catálogo público (config editable en backend). */
+export function getProductos() {
+  return request<{ productos: Producto[]; reglas: ReglasDescuento }>(
+    `/marketplace/products`,
+  );
+}
+
+export interface OrdenMarketplace {
+  id: string;
+  productoSlug: string;
+  productoNombre: string;
+  precioCop: number;
+  ticketsUsados: number;
+  descuentoCop: number;
+  totalCop: number;
+  estado: string; // PENDIENTE_PAGO | PAGADA | ENVIADA | ENTREGADA | CANCELADA
+  direccion: string;
+  telefono: string;
+  createdAt: string;
+}
+
+export function crearOrden(input: {
+  productoSlug: string;
+  ticketsAUsar: number;
+  direccion: string;
+  telefono: string;
+}) {
+  return authFetch<OrdenMarketplace>(`/marketplace/orders`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function getMisOrdenes() {
+  return authFetch<{ ordenes: OrdenMarketplace[] }>(
+    `/marketplace/orders/mine`,
+  );
+}
+
 /* --------------------- Gamificación (Pronósticos) ----------------------- */
 
 export interface MiPrediccion {

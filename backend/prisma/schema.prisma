@@ -306,6 +306,7 @@ model Usuario {
 
   predicciones  Prediccion[]
   refreshTokens RefreshToken[]
+  ordenes       Orden[]
 
   @@map("usuarios")
 }
@@ -523,6 +524,42 @@ model Prediccion {
   // Vista "mis pronósticos" ordenada por fecha.
   @@index([usuarioId, createdAt])
   @@map("predicciones")
+}
+
+// -------------------------------------------------------------------------------------
+// ORDEN — Pedido del Marketplace (doc 15). El catálogo vive en config JSON
+// (productos.json); la orden guarda un SNAPSHOT del producto (nombre/precio)
+// para que editar el catálogo jamás altere pedidos históricos.
+// Los Tickets del descuento se cobran vía Ledger (MARKETPLACE/DESCUENTO) y
+// se REVERSAN si la orden se cancela — `ledgerTransactionId` ancla la auditoría.
+// -------------------------------------------------------------------------------------
+model Orden {
+  id             String      @id @default(uuid())
+  usuarioId      String
+  usuario        Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  productoSlug   String
+  productoNombre String
+  precioCop      Int         // precio de lista al momento de la compra
+  ticketsUsados  Int         @default(0)
+  descuentoCop   Int         @default(0)
+  totalCop       Int         // precio - descuento: lo que se paga en dinero
+  estado         EstadoOrden @default(PENDIENTE_PAGO)
+  direccion      String
+  telefono       String
+  ledgerTransactionId String? // transacción del cobro de tickets (null si 0 tickets)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([usuarioId, createdAt(sort: Desc)])
+  @@map("ordenes")
+}
+
+enum EstadoOrden {
+  PENDIENTE_PAGO // creada; pago en dinero por coordinar (v1 manual, v2 pasarela)
+  PAGADA
+  ENVIADA
+  ENTREGADA
+  CANCELADA // dispara el REVERSO de los tickets usados
 }
 
 // -------------------------------------------------------------------------------------

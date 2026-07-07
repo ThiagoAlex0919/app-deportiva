@@ -14,6 +14,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
 import { UsersModule } from './modules/users/users.module';
 import { SportsModule } from './modules/sports/sports.module';
 import { ContentModule } from './modules/content/content.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ContentModule } from './modules/content/content.module';
     GamificationModule,
     SportsModule, // catálogo público de deportes/eventos (doc 08)
     ContentModule, // noticias agregadas por RSS (doc 11)
+    MarketplaceModule, // tienda con descuentos por Tickets (doc 15)
   ],
   providers: [
     // Guard GLOBAL secure-by-default (07_modulo_users_jwt.md §2.3):

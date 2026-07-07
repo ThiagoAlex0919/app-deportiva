@@ -1,0 +1,57 @@
+[
+  {
+    "_comentario": "Catálogo de la Tienda (doc 15). Editable sin código: añadir/quitar/desactivar productos aquí y redesplegar. Los pedidos guardan snapshot — editar esto no altera órdenes históricas.",
+    "slug": "camiseta-colombia-2026",
+    "nombre": "Camiseta Selección Colombia 2026",
+    "descripcion": "Camiseta oficial local, tecnología de secado rápido. Tallas S-XXL.",
+    "precioCop": 349900,
+    "imagenUrl": "https://images.unsplash.com/photo-1580087433295-ab2600c1030e?w=800&q=80",
+    "categoria": "camisetas",
+    "activo": true
+  },
+  {
+    "slug": "balon-mundial-2026",
+    "nombre": "Balón oficial Mundial 2026",
+    "descripcion": "Réplica oficial del balón de la Copa del Mundo, tamaño 5.",
+    "precioCop": 289900,
+    "imagenUrl": "https://images.unsplash.com/photo-1614632537190-23e4146777db?w=800&q=80",
+    "categoria": "balones",
+    "activo": true
+  },
+  {
+    "slug": "guayos-profesionales",
+    "nombre": "Guayos profesionales de terreno firme",
+    "descripcion": "Botines ligeros con suela FG para cancha natural.",
+    "precioCop": 459900,
+    "imagenUrl": "https://images.unsplash.com/photo-1511886929837-354d827aae26?w=800&q=80",
+    "categoria": "calzado",
+    "activo": true
+  },
+  {
+    "slug": "guantes-arquero-pro",
+    "nombre": "Guantes de arquero Pro Grip",
+    "descripcion": "Látex alemán de máxima adherencia, corte negativo.",
+    "precioCop": 189900,
+    "imagenUrl": "https://images.unsplash.com/photo-1553108715-308e8537ce55?w=800&q=80",
+    "categoria": "accesorios",
+    "activo": true
+  },
+  {
+    "slug": "morral-deportivo",
+    "nombre": "Morral deportivo 35L",
+    "descripcion": "Compartimento para guayos y ropa húmeda, resistente al agua.",
+    "precioCop": 149900,
+    "imagenUrl": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80",
+    "categoria": "accesorios",
+    "activo": true
+  },
+  {
+    "slug": "camiseta-retro-90",
+    "nombre": "Camiseta retro Colombia años 90",
+    "descripcion": "Edición conmemorativa de colección, corte clásico.",
+    "precioCop": 279900,
+    "imagenUrl": "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&q=80",
+    "categoria": "camisetas",
+    "activo": true
+  }
+]
