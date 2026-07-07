@@ -16,8 +16,8 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping API (endpoint público más barato)
+      - name: Ping API (además refresca el feed de noticias — doc 11)
         run: |
           curl -sS -o /dev/null -w "HTTP %{http_code} en %{time_total}s\n" \
             --max-time 90 \
-            "https://app-deportiva-api.onrender.com/api/v1/sports/events?limit=1" || true
+            "https://app-deportiva-api.onrender.com/api/v1/content/news?limit=1" || true

@@ -1,0 +1,23 @@
+[
+  {
+    "_comentario": "Fuentes RSS del feed de noticias (doc 11). Editable sin tocar código: añadir/quitar medios aquí y redesplegar. Una fuente caída se ignora con log, jamás tumba el feed.",
+    "nombre": "Marca",
+    "url": "https://e00-marca.uecdn.es/rss/futbol/primera-division.xml",
+    "deporteSlug": "futbol"
+  },
+  {
+    "nombre": "Mundo Deportivo",
+    "url": "https://www.mundodeportivo.com/rss/home.xml",
+    "deporteSlug": "futbol"
+  },
+  {
+    "nombre": "BBC Sport",
+    "url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
+    "deporteSlug": "futbol"
+  },
+  {
+    "nombre": "Motorsport",
+    "url": "https://es.motorsport.com/rss/f1/news/",
+    "deporteSlug": "formula-1"
+  }
+]

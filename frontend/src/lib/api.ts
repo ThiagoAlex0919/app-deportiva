@@ -245,6 +245,31 @@ export function getEventos(cursor?: string, limit = 20) {
   return request<EventosResponse>(`/sports/events?${params}`);
 }
 
+/* ----------------------- Content (noticias RSS) ------------------------- */
+
+export interface Noticia {
+  id: string;
+  titulo: string;
+  resumen: string | null;
+  url: string; // link al medio original (crédito obligatorio)
+  imagenUrl: string | null;
+  fuente: string;
+  deporteSlug: string | null;
+  publicadaEn: string;
+}
+
+export interface NoticiasResponse {
+  noticias: Noticia[];
+  nextCursor: string | null;
+}
+
+/** Feed público (doc 11): sin token. */
+export function getNoticias(cursor?: string, limit = 10) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return request<NoticiasResponse>(`/content/news?${params}`);
+}
+
 /* --------------------- Gamificación (Pronósticos) ----------------------- */
 
 export interface MiPrediccion {

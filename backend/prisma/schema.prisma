@@ -525,6 +525,27 @@ model Prediccion {
   @@map("predicciones")
 }
 
+// -------------------------------------------------------------------------------------
+// NOTICIA — Feed de contenido agregado (doc 11). Fuente inicial: RSS de medios
+// deportivos (titular + resumen + link con crédito). Diseñada para absorber
+// después APIs pagas o contenido editorial propio: solo cambia `fuente`.
+// -------------------------------------------------------------------------------------
+model Noticia {
+  id          String   @id @default(uuid())
+  titulo      String
+  resumen     String?  // descripción corta del feed, texto plano
+  url         String   @unique // link canónico al medio — clave de dedupe
+  imagenUrl   String?
+  fuente      String   // "Marca", "Mundo Deportivo"...
+  deporteSlug String?  // tag simple; FK real llegará con favoritos/Mi Ecosistema
+  publicadaEn DateTime
+  createdAt   DateTime @default(now())
+
+  // El feed siempre se lee "más reciente primero".
+  @@index([publicadaEn(sort: Desc)])
+  @@map("noticias")
+}
+
 enum EstadoPrediccion {
   PENDIENTE // el evento aún no se resuelve
   ACERTADA  // el oráculo la validó; dispara recompensa vía Ledger
