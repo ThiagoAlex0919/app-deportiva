@@ -4,11 +4,10 @@ import type { EventoCatalogo } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
- * Tarjeta del selector de eventos.
- * Mobile: tarjeta compacta de carrusel horizontal.
- * Desktop: FILA compacta (competición+partido a la izquierda, fecha a la
- * derecha) — la lista respira menos y se escanea más rápido (pedido UX).
- * La seleccionada lleva anillo blanco de 1.5px (patrón chip del design system).
+ * Tarjeta compacta de partido para el tablero con tabs (rediseño):
+ * SIEMPRE vertical y de alto fijo — en mobile viaja en carrusel horizontal,
+ * en desktop vive en un grid de 3-4 columnas que aprovecha el ancho.
+ * La seleccionada lleva anillo blanco (patrón chip del design system).
  */
 export function StoryCard({
   evento,
@@ -25,34 +24,27 @@ export function StoryCard({
   const titulo = esEquipos
     ? `${abrev(local?.nombre)} vs ${abrev(visitante?.nombre)}`
     : evento.nombre.replace("Gran Premio", "GP");
-  const fecha = new Date(evento.fechaInicio).toLocaleDateString("es-CO", {
-    day: "numeric",
-    month: "short",
-  });
+  const fecha = new Date(evento.fechaInicio);
+  const enVivo = evento.estado === "EN_VIVO";
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "shrink-0 snap-start rounded-row bg-surface text-left transition-colors",
-        // Mobile: mini-card de carrusel · Desktop: fila compacta
-        "flex w-40 flex-col gap-0.5 p-3",
-        "lg:w-full lg:flex-row lg:items-center lg:justify-between lg:gap-3 lg:px-3 lg:py-2.5",
+        "flex w-44 shrink-0 snap-start flex-col justify-between gap-1.5 rounded-row bg-surface p-3 text-left transition-colors lg:w-auto lg:shrink",
         seleccionado
           ? "ring-[1.5px] ring-foreground"
           : "active:bg-surface-raised lg:hover:bg-surface-raised",
       )}
     >
-      <span className="min-w-0">
-        <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-foreground-muted">
-          {evento.competicion.nombre}
-        </span>
-        <span className="block truncate text-[14px] font-bold leading-tight">
-          {titulo}
-        </span>
+      <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-foreground-muted">
+        {evento.competicion.nombre}
       </span>
-      {evento.estado === "EN_VIVO" ? (
-        <span className="flex shrink-0 items-center gap-1.5">
+      <span className="line-clamp-2 text-[14px] font-bold leading-tight">
+        {titulo}
+      </span>
+      {enVivo ? (
+        <span className="flex items-center gap-1.5">
           <span className="size-1.5 animate-pulse rounded-full bg-live" />
           {evento.marcador ? (
             <span className="nums text-[14px] font-black">
@@ -63,8 +55,14 @@ export function StoryCard({
           )}
         </span>
       ) : (
-        <span className="shrink-0 text-[12px] text-foreground-secondary">
-          {fecha}
+        <span className="text-[12px] text-foreground-secondary">
+          {fecha.toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
+          {" · "}
+          {fecha.toLocaleTimeString("es-CO", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}
         </span>
       )}
     </button>

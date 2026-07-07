@@ -12,11 +12,14 @@ import { cn } from "@/lib/utils";
 export function EventCard({
   evento,
   minuto,
+  horizontal = false,
   children,
 }: {
   evento: EventoCatalogo;
   /** Minuto de juego fresco (detalle, caché 60s) — solo llega EN VIVO. */
   minuto?: string | null;
+  /** true (Home): en lg+ el versus va a la izquierda y el slot a la derecha. */
+  horizontal?: boolean;
   children?: React.ReactNode;
 }) {
   const esEquipos = evento.deporte.formato === "EQUIPOS";
@@ -37,21 +40,35 @@ export function EventCard({
       {/* Decoración futbolera: líneas de cancha en trazo casi imperceptible.
           Solo neutros — el acento sigue reservado a Tickets (design system). */}
       {esEquipos && <PitchLines />}
-      <CardContent className="relative flex flex-col gap-4">
-        <div className="flex items-center justify-center gap-2 text-[13px] text-foreground-secondary">
-          <span className="font-semibold text-foreground">
-            {evento.competicion.nombre}
-          </span>
-          {evento.fase && <span>· {evento.fase}</span>}
+      <CardContent
+        className={cn(
+          "relative flex flex-col gap-4",
+          horizontal &&
+            children &&
+            "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-center lg:gap-8",
+        )}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-center gap-2 text-[13px] text-foreground-secondary">
+            <span className="font-semibold text-foreground">
+              {evento.competicion.nombre}
+            </span>
+            {evento.fase && <span>· {evento.fase}</span>}
+          </div>
+
+          {esEquipos ? (
+            <VersusLayout
+              evento={evento}
+              dia={dia}
+              hora={hora}
+              minuto={minuto}
+            />
+          ) : (
+            <RaceLayout evento={evento} dia={dia} hora={hora} />
+          )}
         </div>
 
-        {esEquipos ? (
-          <VersusLayout evento={evento} dia={dia} hora={hora} minuto={minuto} />
-        ) : (
-          <RaceLayout evento={evento} dia={dia} hora={hora} />
-        )}
-
-        {children}
+        {children && <div>{children}</div>}
       </CardContent>
     </Card>
   );
