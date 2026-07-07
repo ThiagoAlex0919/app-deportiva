@@ -7,8 +7,8 @@
 > **Funciona end-to-end:** registro/login JWT · pronósticos GRATIS sobre partidos REALES del Mundial 2026 (sync football-data.org cada 5-30 min) · marcador y minuto EN VIVO · Oráculo automático que paga recompensas al terminar los partidos · Billetera con Ledger de doble entrada · noticias RSS (bento + página interna) · tema light/dark · responsive desktop/mobile estilo OneFootball.
 >
 > **COLA PRIORIZADA para la próxima sesión:**
-> 1. **Módulo Torneos/"Pollas"** — inscripción COBRADA en Tickets con premio físico (camisetas/indumentaria). Es el corazón del modelo de negocio (doc 09 §regla 2). Diseñar doc 14.
-> 2. **Zona de Juego** — pestaña con tus pronósticos activos/resueltos e historial de aciertos (todo con APIs existentes).
+> 1. **Módulo Torneos/"Pollas"** — inscripción COBRADA en Tickets con premio físico (camisetas/indumentaria). Es el corazón del modelo de negocio (doc 09 §regla 2). Diseñar doc 15.
+> 2. ~~Zona de Juego~~ ✅ HECHA 2026-07-07 (doc 14): marcador personal, tabs en juego/resueltos, faltantes, teasers.
 > 3. **Aterrizar valores de negocio** — recompensas dummy en `backend/config/recompensas.json` (200/75/250) → modelo rentable y atractivo.
 > 4. Ajustes finos del tema light (revisar contrastes tras uso real).
 > 5. F1 real (football-data es solo fútbol — otro proveedor) · stats premium en vivo (API-Football ~$20-40/mes, decisión de negocio) · users v2 con roles admin (reemplaza ADMIN_API_KEY) · smoke tests con auth · migración formal Prisma · limpiar eventos ficticios del seed · service worker PWA.
@@ -42,7 +42,7 @@
 | 🔒 `GET /api/v1/ledger/balance` | Saldo de Tickets, siempre derivado del Ledger (vista Billetera) |
 | 🔒 `GET /api/v1/ledger/history?cursor=&limit=` | Historial de movimientos, paginación por cursor (vista Billetera) |
 | 🔒 `POST /api/v1/gamification/predictions` | Crea un pronóstico multi-modalidad — **GRATIS** (economía v2, doc 09); idempotente por usuario+evento+modalidad |
-| 🔒 `GET /api/v1/gamification/predictions/mine?eventoId=` | Pronósticos del usuario autenticado (estado + `recompensaTickets`) |
+| 🔒 `GET /api/v1/gamification/predictions/mine?eventoId=` | Pronósticos del usuario con contexto del evento + `resumen` (marcador personal — doc 14) |
 | 🔑 `POST /api/v1/admin/events/:id/finish` | Backoffice (header `X-Admin-Key`): carga resultado, FINALIZA el evento y dispara el Oráculo |
 | `GET /api/v1/sports/events?estado=&cursor=&limit=` | Catálogo público de eventos; `deporte.formato` discrimina el widget de la UI |
 | `GET /api/v1/sports/events/:id` | Detalle de un evento |
@@ -153,6 +153,7 @@ Verificación estática realizada: imports resuelven, modelos/campos/códigos de
 
 | Fecha | Chat | Cambio |
 |---|---|---|
+| 2026-07-07 | Full-stack | **ZONA DE JUEGO** (`14_zona_de_juego.md` aprobado): `predictions/mine` enriquecido (join de evento+participantes, `resumen` con aciertos/precisión/tickets ganados). Página `/juego`: marcador personal (4 stat-cards, tickets con acento), tabs En juego/Resueltos con tarjetas de pronóstico (banderas apiladas, pick legible, chip de estado/recompensa), "te faltan por pronosticar" (catálogo − tuyos) y teasers de Pollas/Misiones. |
 | 2026-07-03 | Arquitecto | Creación del archivo. Generado `schema.prisma` v1 (dominio abstracto + Ledger). Fase 1 en progreso. |
 | 2026-07-03 | Arquitecto | Schema aprobado. **Fase 1 completada.** Siguiente: Fase 2 — inicialización del backend NestJS (Chat Backend). |
 | 2026-07-03 | Backend | `06_arquitectura_nestjs.md` aprobado. Generado Vertical Slice en `backend/`: scaffold NestJS + módulo Ledger (entidad con invariantes, `registrarTransaccion()`, `GET /ledger/balance`, `GET /ledger/history`) + módulo Gamification (`POST /gamification/predictions`). Endpoints listos para probar; pendiente `npm install` + migración. |

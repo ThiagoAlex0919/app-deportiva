@@ -68,24 +68,70 @@ export class PrediccionesService {
       where: { usuarioId, ...(eventoId ? { eventoId } : {}) },
       orderBy: { createdAt: 'desc' },
       take: 100, // suficiente para la UI actual; paginar cuando exista historial largo
+      // Contexto del evento para la Zona de Juego (doc 14): un solo join.
+      include: {
+        evento: {
+          include: {
+            participantes: { include: { participante: true } },
+            temporada: { include: { competicion: true } },
+          },
+        },
+      },
     });
+
+    const predicciones = filas.map((p) => ({
+      prediccionId: p.id,
+      eventoId: p.eventoId,
+      tipo: p.tipo,
+      payload: p.payload as Record<string, unknown>,
+      estado: p.estado,
+      // Recompensa pagada al acertar (desde config/recompensas.json).
+      // NOTA: si el negocio cambia los montos, las ACERTADAS históricas
+      // mostrarían el monto nuevo — aceptable con valores dummy; al
+      // aterrizar el modelo, leer el monto real desde el Ledger.
+      recompensaTickets:
+        p.estado === 'ACERTADA' && esModalidadSoportada(p.tipo)
+          ? recompensaPorModalidad(p.tipo)
+          : null,
+      createdAt: p.createdAt.toISOString(),
+      evento: {
+        id: p.evento.id,
+        nombre: p.evento.nombre,
+        fechaInicio: p.evento.fechaInicio.toISOString(),
+        estado: p.evento.estado,
+        competicion: p.evento.temporada.competicion.nombre,
+        participantes: p.evento.participantes.map((ep) => ({
+          id: ep.participante.id,
+          nombre: ep.participante.nombre,
+          rol: ep.rol,
+          imagenUrl:
+            ((ep.participante.metadata as { crest?: string } | null)?.crest ??
+              null),
+        })),
+      },
+    }));
+
+    // Marcador personal (doc 14): agregado en memoria sobre las mismas filas.
+    const contar = (estado: string) =>
+      predicciones.filter((p) => p.estado === estado).length;
+    const acertadas = contar('ACERTADA');
+    const falladas = contar('FALLADA');
+    const resueltas = acertadas + falladas;
     return {
-      predicciones: filas.map((p) => ({
-        prediccionId: p.id,
-        eventoId: p.eventoId,
-        tipo: p.tipo,
-        payload: p.payload as Record<string, unknown>,
-        estado: p.estado,
-        // Recompensa pagada al acertar (desde config/recompensas.json).
-        // NOTA: si el negocio cambia los montos, las ACERTADAS históricas
-        // mostrarían el monto nuevo — aceptable con valores dummy; al
-        // aterrizar el modelo, leer el monto real desde el Ledger.
-        recompensaTickets:
-          p.estado === 'ACERTADA' && esModalidadSoportada(p.tipo)
-            ? recompensaPorModalidad(p.tipo)
-            : null,
-        createdAt: p.createdAt.toISOString(),
-      })),
+      resumen: {
+        total: predicciones.length,
+        pendientes: contar('PENDIENTE'),
+        acertadas,
+        falladas,
+        anuladas: contar('ANULADA'),
+        ticketsGanados: predicciones.reduce(
+          (suma, p) => suma + (p.recompensaTickets ?? 0),
+          0,
+        ),
+        precision:
+          resueltas > 0 ? Math.round((acertadas / resueltas) * 100) : 0,
+      },
+      predicciones,
     };
   }
 

@@ -1,28 +1,19 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { SectionHeader } from "@/components/shared/section-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { RequireSession } from "@/components/auth/require-session";
+import { JuegoContent } from "@/components/juego/juego-content";
 
 /**
- * B. Zona de Juego — 04_sitemap_y_ux.md §1.B
- * Placeholder Fase 1: misiones, pronósticos y pollas llegan con el motor
- * de reglas de gamificación (backend, fase posterior).
+ * B. Zona de Juego — 04_sitemap_y_ux.md §1.B, implementada según doc 14:
+ * marcador personal, pronósticos por estado, faltantes y teasers.
+ * Las Pollas (torneos con premio físico) son la siguiente iteración.
  */
 export default function JuegoPage() {
   return (
-    <div className="flex flex-col gap-2 lg:mx-auto lg:max-w-xl">
+    <div className="flex flex-col gap-2">
       <PageHeader title="Zona de Juego" />
-      {["Misiones diarias", "Pronósticos", "Pollas comunitarias"].map(
-        (seccion) => (
-          <div key={seccion}>
-            <SectionHeader title={seccion} />
-            <Card>
-              <CardContent className="py-8 text-center text-sm text-foreground-secondary">
-                Muy pronto: gana Tickets participando.
-              </CardContent>
-            </Card>
-          </div>
-        ),
-      )}
+      <RequireSession mensaje="Inicia sesión para ver tus pronósticos y tu racha.">
+        <JuegoContent />
+      </RequireSession>
     </div>
   );
 }

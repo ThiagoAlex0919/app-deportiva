@@ -329,13 +329,39 @@ export interface MiPrediccion {
   /** Tickets ganados si ACERTADA (doc 10); null en el resto. */
   recompensaTickets: number | null;
   createdAt: string;
+  /** Contexto del evento para la Zona de Juego (doc 14). */
+  evento: {
+    id: string;
+    nombre: string;
+    fechaInicio: string;
+    estado: string;
+    competicion: string;
+    participantes: Array<{
+      id: string;
+      nombre: string;
+      rol: string;
+      imagenUrl: string | null;
+    }>;
+  };
+}
+
+/** Marcador personal (doc 14). */
+export interface ResumenPredicciones {
+  total: number;
+  pendientes: number;
+  acertadas: number;
+  falladas: number;
+  anuladas: number;
+  ticketsGanados: number;
+  precision: number;
 }
 
 export function getMisPredicciones(eventoId?: string) {
   const params = eventoId ? `?eventoId=${eventoId}` : "";
-  return authFetch<{ predicciones: MiPrediccion[] }>(
-    `/gamification/predictions/mine${params}`,
-  );
+  return authFetch<{
+    resumen: ResumenPredicciones;
+    predicciones: MiPrediccion[];
+  }>(`/gamification/predictions/mine${params}`);
 }
 
 /** ECONOMÍA v2 (doc 09): pronosticar es gratis — sin costoTickets. */

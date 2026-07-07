@@ -35,8 +35,36 @@ export class CrearPrediccionDto {
   // El cobro queda reservado a la inscripción de torneos (módulo futuro).
 }
 
-/** Respuesta de GET /gamification/predictions/mine (docs 08/10). */
+/** Contexto del evento para pintar la tarjeta del pronóstico (doc 14). */
+export interface EventoDePrediccion {
+  id: string;
+  nombre: string;
+  fechaInicio: string;
+  estado: string;
+  competicion: string;
+  participantes: Array<{
+    id: string;
+    nombre: string;
+    rol: string;
+    imagenUrl: string | null;
+  }>;
+}
+
+/** Marcador personal del usuario (doc 14). */
+export interface ResumenPredicciones {
+  total: number;
+  pendientes: number;
+  acertadas: number;
+  falladas: number;
+  anuladas: number;
+  ticketsGanados: number;
+  /** % de acertadas sobre resueltas (acertadas+falladas); 0 sin resueltas. */
+  precision: number;
+}
+
+/** Respuesta de GET /gamification/predictions/mine (docs 08/10/14). */
 export interface MisPrediccionesResponse {
+  resumen: ResumenPredicciones;
   predicciones: Array<{
     prediccionId: string;
     eventoId: string;
@@ -46,6 +74,7 @@ export interface MisPrediccionesResponse {
     /** Tickets ganados si estado=ACERTADA; null en el resto. */
     recompensaTickets: number | null;
     createdAt: string;
+    evento: EventoDePrediccion;
   }>;
 }
 
