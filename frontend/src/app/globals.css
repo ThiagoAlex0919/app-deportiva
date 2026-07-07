@@ -2,51 +2,97 @@
 @import "tw-animate-css";
 
 /**
- * Tokens del Design System (06_design_system.md) — Tailwind v4 (CSS-first).
- * Dark es el ÚNICO tema. Elevación por tono de superficie, nunca sombras.
+ * Tokens del Design System (06_design_system.md §2) — Tailwind v4.
+ * TEMAS (pedido 2026-07-06): dark es el DEFAULT (doc 04); la clase `.light`
+ * en <html> activa la versión clara. Las utilidades (bg-surface, text-live...)
+ * leen variables, así TODO el sistema cambia de tema sin tocar componentes.
  * El acento `ticket` se reserva EXCLUSIVAMENTE para Tickets y CTAs primarios.
  */
-@theme {
-  /* Superficies */
-  --color-background: #000000;
-  --color-surface: #141416;
-  --color-surface-raised: #1c1c1f;
-  --color-surface-overlay: #232327;
-  --color-border: rgba(255, 255, 255, 0.08);
 
-  /* Texto */
-  --color-foreground: #ffffff;
-  --color-foreground-secondary: #a1a1aa;
-  --color-foreground-muted: #63636b;
+/* ------------------------------- DARK (default) ------------------------ */
+:root {
+  --td-background: #000000;
+  --td-surface: #141416;
+  --td-surface-raised: #1c1c1f;
+  --td-surface-overlay: #232327;
+  --td-border: rgba(255, 255, 255, 0.08);
 
-  /* Acento de recompensa — SOLO Tickets y CTA principal */
-  --color-ticket: #d6f930;
-  --color-ticket-foreground: #0a0a0a;
-  --color-ticket-muted: rgba(214, 249, 48, 0.12);
+  --td-fg: #ffffff;
+  --td-fg-secondary: #a1a1aa;
+  --td-fg-muted: #63636b;
 
-  /* Semánticos */
-  --color-live: #ff2e63;
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
+  --td-ticket: #d6f930;
+  --td-ticket-fg: #0a0a0a;
+  --td-ticket-muted: rgba(214, 249, 48, 0.12);
+
+  --td-live: #ff2e63;
+  --td-success: #22c55e;
+  --td-danger: #ef4444;
+  --td-warning: #f59e0b;
+}
+
+/* --------------------------------- LIGHT -------------------------------- */
+.light {
+  --td-background: #f4f4f6;
+  --td-surface: #ffffff;
+  --td-surface-raised: #ededf0;
+  --td-surface-overlay: #e3e3e9;
+  --td-border: rgba(20, 20, 25, 0.08);
+
+  --td-fg: #141417;
+  --td-fg-secondary: #55555f;
+  --td-fg-muted: #9a9aa3;
+
+  /* El lime funciona en claro (texto oscuro encima); el fondo sutil sube
+     de opacidad para no perderse sobre blanco. */
+  --td-ticket: #cdef1f;
+  --td-ticket-fg: #131303;
+  --td-ticket-muted: rgba(150, 190, 5, 0.16);
+
+  --td-live: #e11d48;
+  --td-success: #16a34a;
+  --td-danger: #dc2626;
+  --td-warning: #d97706;
+}
+
+/* --------------------- Mapeo a utilidades de Tailwind ------------------- */
+@theme inline {
+  --color-background: var(--td-background);
+  --color-surface: var(--td-surface);
+  --color-surface-raised: var(--td-surface-raised);
+  --color-surface-overlay: var(--td-surface-overlay);
+  --color-border: var(--td-border);
+
+  --color-foreground: var(--td-fg);
+  --color-foreground-secondary: var(--td-fg-secondary);
+  --color-foreground-muted: var(--td-fg-muted);
+
+  --color-ticket: var(--td-ticket);
+  --color-ticket-foreground: var(--td-ticket-fg);
+  --color-ticket-muted: var(--td-ticket-muted);
+
+  --color-live: var(--td-live);
+  --color-success: var(--td-success);
+  --color-danger: var(--td-danger);
+  --color-warning: var(--td-warning);
 
   /* Compatibilidad shadcn/ui */
-  --color-card: #141416;
-  --color-card-foreground: #ffffff;
-  --color-popover: #232327;
-  --color-popover-foreground: #ffffff;
-  --color-primary: #d6f930;
-  --color-primary-foreground: #0a0a0a;
-  --color-secondary: #1c1c1f;
-  --color-secondary-foreground: #ffffff;
-  --color-muted: #1c1c1f;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #1c1c1f;
-  --color-accent-foreground: #ffffff;
-  --color-destructive: #ef4444;
+  --color-card: var(--td-surface);
+  --color-card-foreground: var(--td-fg);
+  --color-popover: var(--td-surface-overlay);
+  --color-popover-foreground: var(--td-fg);
+  --color-primary: var(--td-ticket);
+  --color-primary-foreground: var(--td-ticket-fg);
+  --color-secondary: var(--td-surface-raised);
+  --color-secondary-foreground: var(--td-fg);
+  --color-muted: var(--td-surface-raised);
+  --color-muted-foreground: var(--td-fg-secondary);
+  --color-accent: var(--td-surface-raised);
+  --color-accent-foreground: var(--td-fg);
+  --color-destructive: var(--td-danger);
   --color-destructive-foreground: #ffffff;
-  --color-input: #232327;
-  --color-ring: #d6f930;
+  --color-input: var(--td-surface-overlay);
+  --color-ring: var(--td-ticket);
 
   /* Radios */
   --radius-card: 1rem;   /* tarjetas */
@@ -58,14 +104,14 @@
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--td-border);
   }
   html {
-    background: var(--color-background);
+    background: var(--td-background);
   }
   body {
-    background: var(--color-background);
-    color: var(--color-foreground);
+    background: var(--td-background);
+    color: var(--td-fg);
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
   }

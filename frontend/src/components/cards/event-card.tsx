@@ -213,12 +213,18 @@ function PitchLines() {
       {/* gradiente verde-cancha muy oscuro, casi neutro */}
       <defs>
         <radialGradient id="cesped" cx="50%" cy="0%" r="90%">
-          <stop offset="0%" stopColor="#12351f" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+          <stop offset="0%" stopColor="#1d5a33" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#1d5a33" stopOpacity="0" />
         </radialGradient>
       </defs>
       <rect width="400" height="300" fill="url(#cesped)" />
-      <g stroke="#ffffff" strokeOpacity="0.05" strokeWidth="1.5" fill="none">
+      {/* Trazos en el color de texto del tema (funciona en dark y light). */}
+      <g
+        stroke="var(--td-fg)"
+        strokeOpacity="0.06"
+        strokeWidth="1.5"
+        fill="none"
+      >
         <line x1="0" y1="150" x2="400" y2="150" />
         <circle cx="200" cy="150" r="46" />
         <circle cx="200" cy="150" r="3" fill="#ffffff" fillOpacity="0.05" />

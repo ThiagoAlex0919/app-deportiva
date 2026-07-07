@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Ticket } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { NAV_ITEMS, esActiva } from "./nav-items";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +45,12 @@ export function SideNav() {
         })}
       </nav>
 
-      <p className="mt-auto px-3 text-[11px] leading-relaxed text-foreground-muted">
-        Pronostica, gana Tickets y canjéalos por recompensas.
-      </p>
+      <div className="mt-auto flex items-center justify-between gap-2 px-1">
+        <p className="text-[11px] leading-relaxed text-foreground-muted">
+          Pronostica, gana Tickets y canjéalos por recompensas.
+        </p>
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }

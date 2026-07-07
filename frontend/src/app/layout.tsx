@@ -30,8 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="antialiased">
+    <html lang="es" className="antialiased" suppressHydrationWarning>
       <body>
+        {/* Aplica el tema guardado ANTES del primer paint (sin flash).
+            Dark es el default (doc 04); .light activa la versión clara. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('tema')==='light')document.documentElement.classList.add('light')}catch(e){}`,
+          }}
+        />
         <AppShell>{children}</AppShell>
         <Toaster />
       </body>

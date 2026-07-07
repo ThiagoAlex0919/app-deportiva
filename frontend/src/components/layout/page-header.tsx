@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,12 +21,15 @@ export function HomeHeader() {
           </span>
           <h1 className="text-2xl font-bold">Inicio</h1>
         </div>
-        <button
-          aria-label="Buscar"
-          className="flex size-10 items-center justify-center rounded-full bg-surface-raised text-foreground-secondary"
-        >
-          <Search size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            aria-label="Buscar"
+            className="flex size-10 items-center justify-center rounded-full bg-surface-raised text-foreground-secondary"
+          >
+            <Search size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="flex rounded-full bg-surface-raised p-1">
