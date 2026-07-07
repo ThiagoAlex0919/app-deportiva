@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionHeader } from "@/components/shared/section-header";
@@ -96,7 +97,17 @@ export function HomeContent() {
 
       {/* Evento destacado + pronóstico */}
       <div className="lg:sticky lg:top-6">
-        <SectionHeader title="Destacado" />
+        <SectionHeader
+          title="Destacado"
+          action={
+            <Link
+              href={`/evento/${seleccionado.id}`}
+              className="text-[13px] font-semibold text-foreground-secondary transition-colors hover:text-foreground"
+            >
+              Detalle del partido →
+            </Link>
+          }
+        />
         <EventCard evento={seleccionado}>
           <PredictionPanel evento={seleccionado} />
         </EventCard>

@@ -11,16 +11,21 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { Public } from '../../../../shared/presentation/decorators/public.decorator';
 import { EventosService } from '../../application/services/eventos.service';
+import { EventoDetalleService } from '../../application/services/evento-detalle.service';
 import {
   ConsultarEventosQueryDto,
   EventoResponse,
   EventosResponse,
 } from '../../application/dto/eventos.dto';
+import { DetallePartidoResponse } from '../../application/dto/detalle-partido.dto';
 
 @Public()
 @Controller('sports')
 export class EventosController {
-  constructor(private readonly eventosService: EventosService) {}
+  constructor(
+    private readonly eventosService: EventosService,
+    private readonly eventoDetalleService: EventoDetalleService,
+  ) {}
 
   @Get('events')
   listar(@Query() query: ConsultarEventosQueryDto): Promise<EventosResponse> {
@@ -29,6 +34,14 @@ export class EventosController {
       cursor: query.cursor,
       limit: query.limit,
     });
+  }
+
+  /** Detalle en vivo (doc 13) — declarado ANTES de :id por especificidad. */
+  @Get('events/:id/detail')
+  detalle(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<DetallePartidoResponse> {
+    return this.eventoDetalleService.obtener(id);
   }
 
   @Get('events/:id')

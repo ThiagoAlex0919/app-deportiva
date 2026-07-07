@@ -247,6 +247,45 @@ export function getEventos(cursor?: string, limit = 20) {
   return request<EventosResponse>(`/sports/events?${params}`);
 }
 
+/* ------------------- Detalle de partido en vivo (doc 13) ---------------- */
+
+export interface MomentoPartido {
+  minuto: number | null;
+  tipo: "GOL" | "TARJETA_AMARILLA" | "TARJETA_ROJA" | "CAMBIO";
+  participanteId: string | null;
+  jugador: string | null;
+  detalle: string | null;
+}
+
+export interface FilaCaminoTorneo {
+  participanteId: string;
+  grupo: string | null;
+  posicion: number;
+  pj: number;
+  g: number;
+  e: number;
+  p: number;
+  gf: number;
+  gc: number;
+  puntos: number;
+}
+
+export interface DetallePartido {
+  evento: EventoCatalogo;
+  minuto: string | null;
+  marcador: {
+    actual: [number, number] | null;
+    medioTiempo: [number, number] | null;
+  };
+  cronologia: MomentoPartido[];
+  ficha: { arbitro: string | null; estadio: string | null };
+  caminoTorneo: FilaCaminoTorneo[];
+}
+
+export function getEventoDetalle(id: string) {
+  return request<DetallePartido>(`/sports/events/${id}/detail`);
+}
+
 /* ----------------------- Content (noticias RSS) ------------------------- */
 
 export interface Noticia {
