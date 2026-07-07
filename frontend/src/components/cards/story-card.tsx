@@ -52,9 +52,15 @@ export function StoryCard({
         </span>
       </span>
       {evento.estado === "EN_VIVO" ? (
-        <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-live">
+        <span className="flex shrink-0 items-center gap-1.5">
           <span className="size-1.5 animate-pulse rounded-full bg-live" />
-          EN VIVO
+          {evento.marcador ? (
+            <span className="nums text-[14px] font-black">
+              {evento.marcador[0]}-{evento.marcador[1]}
+            </span>
+          ) : (
+            <span className="text-[11px] font-bold text-live">EN VIVO</span>
+          )}
         </span>
       ) : (
         <span className="shrink-0 text-[12px] text-foreground-secondary">

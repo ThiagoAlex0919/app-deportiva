@@ -228,6 +228,8 @@ export interface EventoCatalogo {
   fase: string | null;
   fechaInicio: string;
   estado: string;
+  /** Marcador actual/final si existe (sync cada 5 min con partidos en vivo). */
+  marcador: [number, number] | null;
   competicion: { nombre: string; slug: string };
   /** `formato` es el discriminador de estrategia de la UI (doc 08):
    *  EQUIPOS → widget marcador exacto; MULTITUDINARIO → widget podio. */

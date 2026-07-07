@@ -45,6 +45,8 @@ export interface EventoResponse {
   fase: string | null;
   fechaInicio: string;
   estado: string;
+  /** Marcador actual/final si existe (resultado.marcador del sync). */
+  marcador: [number, number] | null;
   competicion: { nombre: string; slug: string };
   deporte: { nombre: string; slug: string; formato: string };
   participantes: ParticipanteEventoResponse[];

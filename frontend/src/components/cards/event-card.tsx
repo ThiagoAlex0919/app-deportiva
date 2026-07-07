@@ -11,9 +11,12 @@ import { cn } from "@/lib/utils";
  */
 export function EventCard({
   evento,
+  minuto,
   children,
 }: {
   evento: EventoCatalogo;
+  /** Minuto de juego fresco (detalle, caché 60s) — solo llega EN VIVO. */
+  minuto?: string | null;
   children?: React.ReactNode;
 }) {
   const esEquipos = evento.deporte.formato === "EQUIPOS";
@@ -43,7 +46,7 @@ export function EventCard({
         </div>
 
         {esEquipos ? (
-          <VersusLayout evento={evento} dia={dia} hora={hora} />
+          <VersusLayout evento={evento} dia={dia} hora={hora} minuto={minuto} />
         ) : (
           <RaceLayout evento={evento} dia={dia} hora={hora} />
         )}
@@ -60,10 +63,12 @@ function VersusLayout({
   evento,
   dia,
   hora,
+  minuto,
 }: {
   evento: EventoCatalogo;
   dia: string;
   hora: string;
+  minuto?: string | null;
 }) {
   const local = evento.participantes.find((p) => p.rol === "LOCAL");
   const visitante = evento.participantes.find((p) => p.rol === "VISITANTE");
@@ -71,12 +76,19 @@ function VersusLayout({
   return (
     <div className="flex items-center justify-between">
       <Escudo nombre={local?.nombre ?? "?"} imagenUrl={local?.imagenUrl} />
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1.5">
         {enVivo ? (
-          <span className="flex items-center gap-1.5 rounded-full bg-live/10 px-3 py-1 text-[13px] font-bold text-live">
-            <span className="size-1.5 animate-pulse rounded-full bg-live" />
-            EN VIVO
-          </span>
+          <>
+            {evento.marcador && (
+              <span className="nums text-4xl font-black tracking-tight">
+                {evento.marcador[0]} - {evento.marcador[1]}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 rounded-full bg-live/10 px-3 py-1 text-[13px] font-bold text-live">
+              <span className="size-1.5 animate-pulse rounded-full bg-live" />
+              {minuto ? `${minuto}'` : "EN VIVO"}
+            </span>
+          </>
         ) : (
           <>
             <span className="text-[13px] text-foreground-secondary">

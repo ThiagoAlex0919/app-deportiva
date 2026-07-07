@@ -54,6 +54,7 @@ interface EquipoFd {
 }
 
 const CACHE_MS = 30 * 60 * 1000; // 30 min — sobra para 10 req/min del free tier
+const CACHE_VIVO_MS = 5 * 60 * 1000; // 5 min cuando hay partidos EN VIVO (marcador del Home fresco)
 const VENTANA_ATRAS_DIAS = 2; // detectar FINISHED recientes (dispara el oráculo)
 const VENTANA_ADELANTE_DIAS = 14;
 
@@ -84,7 +85,13 @@ export class FixturesSyncService {
 
   /** Punto de entrada: lo llama EventosService antes de listar. */
   async sincronizarSiVencio(): Promise<void> {
-    if (Date.now() - this.ultimaSync < CACHE_MS) return;
+    // Caché adaptativo: con partidos en vivo el marcador del Home
+    // merece refrescarse cada 5 min (sigue siendo barato: 3 req/5 min).
+    const hayEnVivo = await this.prisma.evento.count({
+      where: { estado: EstadoEvento.EN_VIVO },
+    });
+    const cache = hayEnVivo > 0 ? CACHE_VIVO_MS : CACHE_MS;
+    if (Date.now() - this.ultimaSync < cache) return;
     this.syncEnCurso ??= this.sincronizar().finally(() => {
       this.syncEnCurso = null;
     });

@@ -83,12 +83,21 @@ export class EventosService {
 
   private aResponse(e: EventoConRelaciones): EventoResponse {
     const competicion = e.temporada.competicion;
+    const marcadorCrudo = (e.resultado as { marcador?: unknown } | null)
+      ?.marcador;
+    const marcador =
+      Array.isArray(marcadorCrudo) &&
+      marcadorCrudo.length === 2 &&
+      marcadorCrudo.every((n) => typeof n === 'number')
+        ? (marcadorCrudo as [number, number])
+        : null;
     return {
       id: e.id,
       nombre: e.nombre,
       fase: e.fase,
       fechaInicio: e.fechaInicio.toISOString(),
       estado: e.estado,
+      marcador,
       competicion: { nombre: competicion.nombre, slug: competicion.slug },
       deporte: {
         nombre: competicion.deporte.nombre,

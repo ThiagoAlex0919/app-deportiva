@@ -8,7 +8,12 @@ import { SectionHeader } from "@/components/shared/section-header";
 import { StoryCard } from "@/components/cards/story-card";
 import { EventCard } from "@/components/cards/event-card";
 import { PredictionPanel } from "@/components/gamification/prediction-panel";
-import { getEventos, ApiRequestError, type EventoCatalogo } from "@/lib/api";
+import {
+  getEventos,
+  getEventoDetalle,
+  ApiRequestError,
+  type EventoCatalogo,
+} from "@/lib/api";
 
 /**
  * Contenido dinámico del Home (doc 08): eventos reales del catálogo.
@@ -20,6 +25,8 @@ export function HomeContent() {
   const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
   const [estado, setEstado] = useState<"loading" | "ok" | "error">("loading");
   const [mensajeError, setMensajeError] = useState("");
+  /** Minuto fresco del destacado EN VIVO (detalle, caché 60s del backend). */
+  const [minutoVivo, setMinutoVivo] = useState<string | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -79,6 +86,44 @@ export function HomeContent() {
     eventos.find((e) => e.id === seleccionadoId) ?? eventos[0];
 
   return (
+    <ContenidoEventos
+      eventos={eventos}
+      seleccionado={seleccionado}
+      onSeleccionar={setSeleccionadoId}
+      minutoVivo={minutoVivo}
+      setMinutoVivo={setMinutoVivo}
+    />
+  );
+}
+
+function ContenidoEventos({
+  eventos,
+  seleccionado,
+  onSeleccionar,
+  minutoVivo,
+  setMinutoVivo,
+}: {
+  eventos: EventoCatalogo[];
+  seleccionado: EventoCatalogo;
+  onSeleccionar: (id: string) => void;
+  minutoVivo: string | null;
+  setMinutoVivo: (m: string | null) => void;
+}) {
+  // Minuto de juego del destacado cuando está EN VIVO.
+  useEffect(() => {
+    let activo = true;
+    setMinutoVivo(null);
+    if (seleccionado.estado !== "EN_VIVO") return;
+    getEventoDetalle(seleccionado.id)
+      .then((d) => activo && setMinutoVivo(d.minuto))
+      .catch(() => undefined);
+    return () => {
+      activo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccionado.id, seleccionado.estado]);
+
+  return (
     <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-6">
       {/* Carrusel (mobile) / lista compacta lateral (desktop) */}
       <div>
@@ -89,7 +134,7 @@ export function HomeContent() {
               key={e.id}
               evento={e}
               seleccionado={e.id === seleccionado.id}
-              onClick={() => setSeleccionadoId(e.id)}
+              onClick={() => onSeleccionar(e.id)}
             />
           ))}
         </div>
@@ -108,7 +153,7 @@ export function HomeContent() {
             </Link>
           }
         />
-        <EventCard evento={seleccionado}>
+        <EventCard evento={seleccionado} minuto={minutoVivo}>
           <PredictionPanel evento={seleccionado} />
         </EventCard>
       </div>
