@@ -1,5 +1,20 @@
 # 05 — Estado del Proyecto (Punto de Sincronización)
 
+> ## 🔖 CIERRE v0.1.0 (2026-07-06) — CÓMO RETOMAR
+>
+> **Lo que está VIVO en producción:** https://app-deportiva-delta.vercel.app (frontend Vercel) ← https://app-deportiva-api.onrender.com/api/v1 (NestJS + PostgreSQL en Render). Repo: https://github.com/ThiagoAlex0919/app-deportiva (push a `main` = deploy automático en ambos).
+>
+> **Funciona end-to-end:** registro/login JWT · pronósticos GRATIS sobre partidos REALES del Mundial 2026 (sync football-data.org cada 5-30 min) · marcador y minuto EN VIVO · Oráculo automático que paga recompensas al terminar los partidos · Billetera con Ledger de doble entrada · noticias RSS (bento + página interna) · tema light/dark · responsive desktop/mobile estilo OneFootball.
+>
+> **COLA PRIORIZADA para la próxima sesión:**
+> 1. **Módulo Torneos/"Pollas"** — inscripción COBRADA en Tickets con premio físico (camisetas/indumentaria). Es el corazón del modelo de negocio (doc 09 §regla 2). Diseñar doc 14.
+> 2. **Zona de Juego** — pestaña con tus pronósticos activos/resueltos e historial de aciertos (todo con APIs existentes).
+> 3. **Aterrizar valores de negocio** — recompensas dummy en `backend/config/recompensas.json` (200/75/250) → modelo rentable y atractivo.
+> 4. Ajustes finos del tema light (revisar contrastes tras uso real).
+> 5. F1 real (football-data es solo fútbol — otro proveedor) · stats premium en vivo (API-Football ~$20-40/mes, decisión de negocio) · users v2 con roles admin (reemplaza ADMIN_API_KEY) · smoke tests con auth · migración formal Prisma · limpiar eventos ficticios del seed · service worker PWA.
+>
+> **Notas operativas:** tokens/keys viven en Render → Environment (`FOOTBALL_DATA_TOKEN`, `ADMIN_API_KEY`, `JWT_SECRET`). Configs editables sin código: `backend/config/{recompensas,fuentes-rss,competiciones-sync}.json`. Keep-alive: GitHub Action cada 10 min (pestaña Actions). Para que el asistente pueda hacer push: generar un token nuevo de GitHub (el usado en la sesión v0.1.0 debe revocarse).
+
 > **Propósito:** Este archivo es la única fuente de verdad sobre el estado actual del desarrollo.
 > Los chats de Backend y Frontend DEBEN leer este archivo al iniciar y actualizarlo al terminar su trabajo.
 > Reglas absolutas del proyecto: ver `01_vision_y_stack.md`, `02_modelo_de_dominio.md`, `03_instrucciones_fable5.md`, `04_sitemap_y_ux.md`.
