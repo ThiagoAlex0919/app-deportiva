@@ -11,7 +11,7 @@
 > 2. ~~Zona de Juego~~ ✅ HECHA 2026-07-07 (doc 14): marcador personal, tabs en juego/resueltos, faltantes, teasers.
 > 3. **Aterrizar valores de negocio** — recompensas dummy en `backend/config/recompensas.json` (200/75/250) → modelo rentable y atractivo.
 > 4. Ajustes finos del tema light (revisar contrastes tras uso real).
-> 5. F1 real (football-data es solo fútbol — otro proveedor) · stats premium en vivo (API-Football ~$20-40/mes, decisión de negocio) · users v2 con roles admin (reemplaza ADMIN_API_KEY) · smoke tests con auth · migración formal Prisma · limpiar eventos ficticios del seed · service worker PWA.
+> 5. F1 real (football-data es solo fútbol — otro proveedor) · stats premium en vivo (API-Football ~$20-40/mes, decisión de negocio) · users v2 con roles admin (reemplaza ADMIN_API_KEY) · **flujo "olvidé mi contraseña" por email** (mientras tanto: `POST /admin/users/reset-password` con X-Admin-Key) · smoke tests con auth · migración formal Prisma · limpiar eventos ficticios del seed · service worker PWA.
 >
 > **Notas operativas:** tokens/keys viven en Render → Environment (`FOOTBALL_DATA_TOKEN`, `ADMIN_API_KEY`, `JWT_SECRET`). Configs editables sin código: `backend/config/{recompensas,fuentes-rss,competiciones-sync}.json`. Keep-alive: GitHub Action cada 10 min (pestaña Actions). Para que el asistente pueda hacer push: generar un token nuevo de GitHub (el usado en la sesión v0.1.0 debe revocarse).
 

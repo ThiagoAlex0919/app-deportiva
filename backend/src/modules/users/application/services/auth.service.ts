@@ -143,6 +143,40 @@ export class AuthService {
     return { ok: true };
   }
 
+  /**
+   * Reset de contraseña por BACKOFFICE (X-Admin-Key) — puente hasta el flujo
+   * "olvidé mi contraseña" por email. Revoca todas las sesiones del usuario.
+   */
+  async resetPassword(
+    email: string,
+    nuevaPassword: string,
+  ): Promise<{ ok: true }> {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+    if (!usuario) {
+      throw new DomainException(
+        'No existe un usuario con ese email',
+        'RECURSO_NO_ENCONTRADO',
+        404,
+      );
+    }
+    const passwordHash = await bcrypt.hash(nuevaPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction([
+      this.prisma.usuario.update({
+        where: { id: usuario.id },
+        data: { passwordHash },
+      }),
+      // Sesiones viejas fuera: la cuenta recuperada arranca limpia.
+      this.prisma.refreshToken.updateMany({
+        where: { usuarioId: usuario.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    this.logger.log(`Password reseteada por backoffice para ${usuario.id}`);
+    return { ok: true };
+  }
+
   /** Perfil del usuario autenticado (GET /users/me). */
   async perfil(usuarioId: string): Promise<PerfilResponse> {
     const usuario = await this.prisma.usuario.findUniqueOrThrow({

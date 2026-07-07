@@ -11,6 +11,7 @@ import { LedgerModule } from '../ledger/ledger.module';
 import { AuthService } from './application/services/auth.service';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { UsersController } from './presentation/controllers/users.controller';
+import { AdminUsersController } from './presentation/controllers/admin-users.controller';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { UsersController } from './presentation/controllers/users.controller';
     }),
     LedgerModule,
   ],
-  controllers: [AuthController, UsersController],
+  controllers: [AuthController, UsersController, AdminUsersController],
   providers: [AuthService],
 })
 export class UsersModule {}
