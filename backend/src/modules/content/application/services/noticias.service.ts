@@ -11,7 +11,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import Parser from 'rss-parser';
+// rss-parser es CommonJS puro (module.exports = Parser) y el tsconfig no usa
+// esModuleInterop: `import ... = require(...)` es la forma que funciona en
+// compilación Y en runtime (un default import emitiría `.default` → undefined).
+import Parser = require('rss-parser');
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import {
   NoticiasResponse,
