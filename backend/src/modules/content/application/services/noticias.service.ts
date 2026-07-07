@@ -153,14 +153,17 @@ export class NoticiasService {
       const titulo = item.title?.trim();
       if (!url || !titulo) continue; // sin link o título no hay noticia
 
+      const imagenUrl = this.extraerImagen(item);
       const creada = await this.prisma.noticia.upsert({
         where: { url },
-        update: {}, // dedupe: la primera versión gana (histórico inmutable)
+        // Dedupe: el contenido no se reescribe, pero la imagen SÍ se puede
+        // mejorar (las noticias ya guardadas adoptan la resolución alta).
+        update: imagenUrl ? { imagenUrl } : {},
         create: {
           titulo,
           resumen: this.limpiarResumen(item.contentSnippet),
           url,
-          imagenUrl: this.extraerImagen(item),
+          imagenUrl,
           fuente: fuente.nombre,
           deporteSlug: fuente.deporteSlug ?? null,
           publicadaEn: item.isoDate ? new Date(item.isoDate) : new Date(),
@@ -179,18 +182,51 @@ export class NoticiasService {
     return limpio.length > 280 ? `${limpio.slice(0, 279)}…` : limpio;
   }
 
-  /** Imagen: enclosure > media:content > media:thumbnail (formatos RSS varios). */
+  /**
+   * Imagen: elige la de MAYOR resolución entre todos los candidatos del item
+   * (media:content puede traer varias variantes con width/height) y aplica
+   * mejoras por CDN conocido — muchos feeds publican thumbnails de 240px
+   * pero el mismo CDN sirve la versión grande cambiando un segmento de la URL.
+   */
   private extraerImagen(item: {
     enclosure?: { url?: string };
-    mediaContent?: Array<{ $?: { url?: string } }>;
-    mediaThumbnail?: { $?: { url?: string } };
+    mediaContent?: Array<{ $?: { url?: string; width?: string } }>;
+    mediaThumbnail?:
+      | { $?: { url?: string; width?: string } }
+      | Array<{ $?: { url?: string; width?: string } }>;
   }): string | null {
-    return (
-      item.enclosure?.url ??
-      item.mediaContent?.[0]?.$?.url ??
-      item.mediaThumbnail?.$?.url ??
-      null
-    );
+    const candidatos: Array<{ url: string; ancho: number }> = [];
+
+    const agregar = (url?: string, width?: string) => {
+      if (url) candidatos.push({ url, ancho: Number(width) || 0 });
+    };
+
+    agregar(item.enclosure?.url);
+    for (const m of item.mediaContent ?? []) agregar(m.$?.url, m.$?.width);
+    const thumbs = Array.isArray(item.mediaThumbnail)
+      ? item.mediaThumbnail
+      : item.mediaThumbnail
+        ? [item.mediaThumbnail]
+        : [];
+    for (const t of thumbs) agregar(t.$?.url, t.$?.width);
+
+    if (candidatos.length === 0) return null;
+    // Mayor ancho declarado gana; sin metadatos, el primer candidato.
+    candidatos.sort((a, b) => b.ancho - a.ancho);
+    return this.mejorarResolucion(candidatos[0].url);
+  }
+
+  /** Upgrades seguros por CDN conocido (si el patrón no matchea, se respeta la URL). */
+  private mejorarResolucion(url: string): string {
+    // BBC (ichef.bbci.co.uk): .../ace/standard/240/... → variante de 976px.
+    if (url.includes('ichef.bbci.co.uk')) {
+      return url.replace(/\/(standard|ws)\/(\d{2,4})\//, '/$1/976/');
+    }
+    // La Vanguardia / Mundo Deportivo: .../690x450/... o parámetro de resize.
+    if (url.includes('mundodeportivo') || url.includes('lavanguardia')) {
+      return url.replace(/\/(\d{2,4})x(\d{2,4})\//, '/1200x675/');
+    }
+    return url;
   }
 
   private cargarFuentes(): FuenteRss[] {

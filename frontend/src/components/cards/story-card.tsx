@@ -4,7 +4,10 @@ import type { EventoCatalogo } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
- * Tarjeta compacta del carrusel de eventos (estilo stories de referencias_ui).
+ * Tarjeta del selector de eventos.
+ * Mobile: tarjeta compacta de carrusel horizontal.
+ * Desktop: FILA compacta (competición+partido a la izquierda, fecha a la
+ * derecha) — la lista respira menos y se escanea más rápido (pedido UX).
  * La seleccionada lleva anillo blanco de 1.5px (patrón chip del design system).
  */
 export function StoryCard({
@@ -31,19 +34,26 @@ export function StoryCard({
     <button
       onClick={onClick}
       className={cn(
-        "flex w-36 shrink-0 snap-start flex-col gap-1 rounded-card bg-surface p-3 text-left transition-colors lg:w-full lg:shrink",
+        "shrink-0 snap-start rounded-row bg-surface text-left transition-colors",
+        // Mobile: mini-card de carrusel · Desktop: fila compacta
+        "flex w-40 flex-col gap-0.5 p-3",
+        "lg:w-full lg:flex-row lg:items-center lg:justify-between lg:gap-3 lg:px-3 lg:py-2.5",
         seleccionado
           ? "ring-[1.5px] ring-foreground"
-          : "active:bg-surface-raised",
+          : "active:bg-surface-raised lg:hover:bg-surface-raised",
       )}
     >
-      <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground-secondary">
-        {evento.competicion.nombre}
+      <span className="min-w-0">
+        <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-foreground-muted">
+          {evento.competicion.nombre}
+        </span>
+        <span className="block truncate text-[14px] font-bold leading-tight">
+          {titulo}
+        </span>
       </span>
-      <span className="line-clamp-2 text-[15px] font-bold leading-tight">
-        {titulo}
+      <span className="shrink-0 text-[12px] text-foreground-secondary">
+        {fecha}
       </span>
-      <span className="text-[13px] text-foreground-muted">{fecha}</span>
     </button>
   );
 }

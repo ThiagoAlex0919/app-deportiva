@@ -78,11 +78,11 @@ export function HomeContent() {
     eventos.find((e) => e.id === seleccionadoId) ?? eventos[0];
 
   return (
-    <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
-      {/* Carrusel (mobile) / lista lateral (desktop) */}
+    <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      {/* Carrusel (mobile) / lista compacta lateral (desktop) */}
       <div>
         <SectionHeader title="Próximos eventos" />
-        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
+        <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
           {eventos.map((e) => (
             <StoryCard
               key={e.id}
