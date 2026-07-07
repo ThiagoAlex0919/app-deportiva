@@ -7,11 +7,18 @@
  * hace ping aquí cada 10 min — mantiene el servicio despierto Y el feed
  * fresco en el mismo request.
  */
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { Public } from '../../../../shared/presentation/decorators/public.decorator';
 import { NoticiasService } from '../../application/services/noticias.service';
 import {
   ConsultarNoticiasQueryDto,
+  NoticiaResponse,
   NoticiasResponse,
 } from '../../application/dto/noticias.dto';
 
@@ -27,5 +34,13 @@ export class NoticiasController {
       cursor: query.cursor,
       limit: query.limit,
     });
+  }
+
+  /** Detalle para la página interna /noticia/[id]. */
+  @Get('news/:id')
+  obtener(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<NoticiaResponse> {
+    return this.noticiasService.obtener(id);
   }
 }

@@ -15,6 +15,7 @@ import { join } from 'node:path';
 // esModuleInterop: `import ... = require(...)` es la forma que funciona en
 // compilación Y en runtime (un default import emitiría `.default` → undefined).
 import Parser = require('rss-parser');
+import { RecursoNoEncontradoException } from '../../../../shared/domain/exceptions/domain.exception';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import {
   NoticiasResponse,
@@ -83,6 +84,24 @@ export class NoticiasService {
         publicadaEn: n.publicadaEn.toISOString(),
       })),
       nextCursor: hayMas ? pagina[pagina.length - 1].id : null,
+    };
+  }
+
+  /** Detalle de una noticia (página interna /noticia/[id] del frontend). */
+  async obtener(id: string) {
+    const n = await this.prisma.noticia.findUnique({ where: { id } });
+    if (!n) {
+      throw new RecursoNoEncontradoException('Noticia', id);
+    }
+    return {
+      id: n.id,
+      titulo: n.titulo,
+      resumen: n.resumen,
+      url: n.url,
+      imagenUrl: n.imagenUrl,
+      fuente: n.fuente,
+      deporteSlug: n.deporteSlug,
+      publicadaEn: n.publicadaEn.toISOString(),
     };
   }
 

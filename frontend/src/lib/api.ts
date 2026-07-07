@@ -270,6 +270,11 @@ export function getNoticias(cursor?: string, limit = 10) {
   return request<NoticiasResponse>(`/content/news?${params}`);
 }
 
+/** Detalle para la página interna /noticia/[id]. */
+export function getNoticia(id: string) {
+  return request<Noticia>(`/content/news/${id}`);
+}
+
 /* --------------------- Gamificación (Pronósticos) ----------------------- */
 
 export interface MiPrediccion {

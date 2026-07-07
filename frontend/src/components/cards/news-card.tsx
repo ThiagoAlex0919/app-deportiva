@@ -1,46 +1,78 @@
 /* eslint-disable @next/next/no-img-element */
+import Link from "next/link";
 import type { Noticia } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 /**
- * Tarjeta de noticia según referencias_ui/belgica-noticas.jpeg (OneFootball):
- * título bold a la izquierda, imagen redondeada a la derecha, fila inferior
- * con fuente + antigüedad. Abre el medio original en pestaña nueva — el
- * crédito a la fuente es parte del trato del agregador (doc 11).
+ * Tarjetas de noticia IMAGEN-PROTAGONISTA (rediseño pedido sobre doc 11):
+ * la imagen es el fondo, un gradiente oscuro garantiza contraste y el
+ * titular vive encima. Navegan a la página interna /noticia/[id]
+ * (el link al medio original vive allí, con crédito).
+ *
+ * `variant`:
+ *  - "hero": tarjeta grande del bento (título display, resumen visible)
+ *  - "tile": tarjeta estándar de grid
  * <img> nativo (no next/image): dominios de imagen impredecibles por RSS.
  */
-export function NewsCard({ noticia }: { noticia: Noticia }) {
+export function NewsCard({
+  noticia,
+  variant = "tile",
+  className,
+}: {
+  noticia: Noticia;
+  variant?: "hero" | "tile";
+  className?: string;
+}) {
+  const esHero = variant === "hero";
   return (
-    <a
-      href={noticia.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex gap-4 rounded-card bg-surface p-4 transition-colors active:bg-surface-raised lg:hover:bg-surface-raised"
+    <Link
+      href={`/noticia/${noticia.id}`}
+      className={cn(
+        "group relative flex flex-col justify-end overflow-hidden rounded-card bg-surface",
+        esHero ? "min-h-72 lg:min-h-full" : "min-h-56",
+        className,
+      )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="line-clamp-3 text-[16px] font-bold leading-snug">
-          {noticia.titulo}
-        </h3>
-        <p className="mt-auto text-[13px] text-foreground-secondary">
-          <span className="font-semibold text-foreground">
-            {noticia.fuente}
-          </span>{" "}
-          · {haceCuanto(noticia.publicadaEn)}
-        </p>
-      </div>
-      {noticia.imagenUrl && (
+      {/* Imagen de fondo + gradiente de legibilidad */}
+      {noticia.imagenUrl ? (
         <img
           src={noticia.imagenUrl}
           alt=""
           loading="lazy"
-          className="size-24 shrink-0 rounded-row object-cover"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-overlay to-surface" />
       )}
-    </a>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+
+      {/* Contenido sobre la imagen */}
+      <div className={cn("relative flex flex-col gap-2", esHero ? "p-5" : "p-4")}>
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground-secondary">
+          {noticia.fuente} · {haceCuanto(noticia.publicadaEn)}
+        </span>
+        <h3
+          className={cn(
+            "font-bold leading-snug",
+            esHero
+              ? "line-clamp-3 text-xl lg:text-2xl"
+              : "line-clamp-3 text-[15px]",
+          )}
+        >
+          {noticia.titulo}
+        </h3>
+        {esHero && noticia.resumen && (
+          <p className="line-clamp-2 hidden text-sm text-foreground-secondary lg:block">
+            {noticia.resumen}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 
 /** "hace 2 h", "hace 3 d" — suficiente para un feed. */
-function haceCuanto(iso: string): string {
+export function haceCuanto(iso: string): string {
   const minutos = Math.max(
     0,
     Math.floor((Date.now() - new Date(iso).getTime()) / 60_000),
